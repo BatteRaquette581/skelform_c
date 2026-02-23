@@ -2,8 +2,8 @@
 #define SKELFORM_C_H
 
 #include <math.h>
-#include <memory.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef char bool;
 #define true 1
