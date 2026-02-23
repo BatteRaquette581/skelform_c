@@ -3,101 +3,104 @@
 
 #include <math.h>
 #include <memory.h>
-#include <stdbool.h> 
 #include <stdint.h>
 
-#define Vec_BASE_CAPACITY 8
-#define Vec(T) struct Vec_##T { \
-    T *elements;                \
-    size_t capacity;            \
-    size_t size;                \
-}
-#define Vec_struct(T) struct Vec_##T { \
-    struct T *elements;                \
-    size_t capacity;                   \
-    size_t size;                       \
-}
-#define Vec_append(vec, element) {                                                  \
-    if (vec.capacity <= vec.size) {                                                 \
-        if (vec.capacity == 0)                                                      \
-            vec.capacity = Vec_BASE_CAPACITY;                                       \
-        else                                                                        \
-            vec.capacity <<= 1;                                                     \
-        vec.elements = realloc(vec.elements, vec.capacity * sizeof(*vec.elements)); \
-    }                                                                               \
-    vec.elements[vec.size++] = element;                                             \
-}
-Vec(int32_t);
-Vec(uint32_t);
+typedef char bool;
+#define true 1
+#define false 0
 
-struct Vec2 {
+#define skf_Vec_BASE_CAPACITY 8
+#define skf_Vec(T) struct skf_Vec_##T { \
+    T *elements;                        \
+    size_t capacity;                    \
+    size_t size;                        \
+}
+#define skf_Vec_struct(T) struct skf_Vec_##T { \
+    struct skf_##T *elements;                  \
+    size_t capacity;                           \
+    size_t size;                               \
+}
+#define skf_Vec_append(vec, element) {                                                  \
+    if (vec.capacity <= vec.size) {                                                     \
+        if (vec.capacity == 0)                                                          \
+            vec.capacity = Vec_BASE_CAPACITY;                                           \
+        else                                                                            \
+            vec.capacity <<= 1;                                                         \
+        vec.elements = realloc(vec.elements, vec.capacity * sizeof(*vec.elements));     \
+    }                                                                                   \
+    vec.elements[vec.size++] = element;                                                 \
+}
+skf_Vec(int32_t);
+skf_Vec(uint32_t);
+
+struct skf_Vec2 {
     float x;
     float y;
 };
 
-bool Vec2_eq(struct Vec2 v1, struct Vec2 v2)
+bool skf_Vec2_eq(struct skf_Vec2 v1, struct skf_Vec2 v2)
 {
     return v1.x == v2.x && v1.y == v2.y;
 }
 
-struct Vertex {
-    struct Vec2 pos;
-    struct Vec2 uv;
-    struct Vec2 init_pos;
+struct skf_Vertex {
+    struct skf_Vec2 pos;
+    struct skf_Vec2 uv;
+    struct skf_Vec2 init_pos;
 };
-Vec_struct(Vertex);
+skf_Vec_struct(Vertex);
 
-enum HandlePreset {
-    HandlePreset_Linear,
-    HandlePreset_SineIn,
-    HandlePreset_SineOut,
-    HandlePreset_SineInOut,
-    HandlePreset_None,
-    HandlePreset_Custom
+enum skf_HandlePreset {
+    skf_HandlePreset_Linear,
+    skf_HandlePreset_SineIn,
+    skf_HandlePreset_SineOut,
+    skf_HandlePreset_SineInOut,
+    skf_HandlePreset_None,
+    skf_HandlePreset_Custom
 };
 
-struct Keyframe {
-    struct Vec2 start_handle;
-    struct Vec2 end_handle;
+struct skf_Keyframe {
+    struct skf_Vec2 start_handle;
+    struct skf_Vec2 end_handle;
     const char *element;
     const char *value_str;
     int32_t frame;
     int32_t bone_id;
     float value;
     float label_top;
-    enum HandlePreset handle_preset;
+    enum skf_HandlePreset handle_preset;
 };
-Vec_struct(Keyframe);
+skf_Vec_struct(Keyframe);
 
-struct Animation {
-    struct Vec_Keyframe keyframes;
+struct skf_Animation {
+    struct skf_Vec_Keyframe keyframes;
     const char *name;
     int32_t fps;
 };
-Vec_struct(Animation);
+skf_Vec_struct(Animation);
 
-struct BoneBindVert {
+struct skf_BoneBindVert {
     int32_t id;
     float weight;
 };
-Vec_struct(BoneBindVert);
+skf_Vec_struct(BoneBindVert);
 
-struct BoneBind {
-    struct Vec_BoneBindVert verts;
+struct skf_BoneBind {
+    struct skf_Vec_BoneBindVert verts;
     int32_t bone_id;
     bool is_path;
 };
-Vec_struct(BoneBind);
+skf_Vec_struct(BoneBind);
 
-struct Bone {
-    struct Vec_int32_t ik_bone_ids;
-    struct Vec_Vertex vertices;
-    struct Vec_uint32_t indices;
-    struct Vec_BoneBind binds;
-    struct Vec2 scale;
-    struct Vec2 pos;
-    struct Vec2 init_scale;
-    struct Vec2 init_pos;
+struct skf_Bone {
+    struct skf_Vec_int32_t ik_bone_ids;
+    struct skf_Vec_Vertex vertices;
+    struct skf_Vec_uint32_t indices;
+    struct skf_Vec_BoneBind binds;
+    struct skf_Vec2 scale;
+    struct skf_Vec2 pos;
+    struct skf_Vec2 init_scale;
+    struct skf_Vec2 init_pos;
     const char *name;
     const char *tex;
     const char *ik_constraint;
@@ -111,49 +114,49 @@ struct Bone {
     float zindex;
     float init_rot;
 };
-Vec_struct(Bone);
+skf_Vec_struct(Bone);
 
-struct Texture {
-    struct Vec2 offset;
-    struct Vec2 size;
+struct skf_Texture {
+    struct skf_Vec2 offset;
+    struct skf_Vec2 size;
     const char *name;
     int32_t atlas_idx;
 };
-Vec_struct(Texture);
+skf_Vec_struct(Texture);
 
-struct Style {
-    struct Vec_Texture textures;
+struct skf_Style {
+    struct skf_Vec_Texture textures;
     const char *name;
     int32_t id;
     bool active;
 };
-Vec_struct(Style);
+skf_Vec_struct(Style);
 
-struct TexAtlas {
-    struct Vec2 size;
+struct skf_TexAtlas {
+    struct skf_Vec2 size;
     const char *filename;
 };
-Vec_struct(TexAtlas);
+skf_Vec_struct(TexAtlas);
 
-struct Metadata {
+struct skf_Metadata {
     size_t last_anim;
     int32_t last_frame;
 };
 
-struct Armature {
-    struct Vec_int32_t ik_root_ids;
-    struct Vec_Bone bones;
-    struct Vec_Animation animations;
-    struct Vec_Texture textures;
-    struct Vec_Style styles;
-    struct Vec_TexAtlas atlases;
-    struct Metadata metadata;
+struct skf_Armature {
+    struct skf_Vec_int32_t ik_root_ids;
+    struct skf_Vec_Bone bones;
+    struct skf_Vec_Animation animations;
+    struct skf_Vec_Texture textures;
+    struct skf_Vec_Style styles;
+    struct skf_Vec_TexAtlas atlases;
+    struct skf_Metadata metadata;
     bool baked_ik;
 };
 
 
 size_t get_prev_frame(
-    const struct Vec_Keyframe *keyframes,
+    const struct skf_Vec_Keyframe *keyframes,
     const int32_t frame, 
     const char *element,
     const int32_t id
@@ -161,7 +164,7 @@ size_t get_prev_frame(
 {
     size_t i, prev = SIZE_MAX;
     for (i = 0; i < keyframes->size; i++) {
-        const struct Keyframe *kf = &keyframes->elements[i];
+        const struct skf_Keyframe *kf = &keyframes->elements[i];
         if (kf->frame <= frame && kf->element == element && kf->bone_id == id)
             prev = i;
     }
@@ -169,7 +172,7 @@ size_t get_prev_frame(
 }
 
 size_t get_next_frame(
-    const struct Vec_Keyframe *keyframes,
+    const struct skf_Vec_Keyframe *keyframes,
     const int32_t frame, 
     const char *element,
     const int32_t id
@@ -177,7 +180,7 @@ size_t get_next_frame(
 {
     size_t i;
     for (i = 0; i < keyframes->size; i++) {
-        const struct Keyframe *kf = &keyframes->elements[i];
+        const struct skf_Keyframe *kf = &keyframes->elements[i];
         if (kf->frame > frame && kf->element == element && kf->bone_id == id)
             return i;
     }
@@ -197,7 +200,8 @@ float cubic_bezier_derivative(const float t, const float p1, const float p2)
 }
 
 /* https://stackoverflow.com/a/16659263 */
-float clamp(float d, float min, float max) {
+float clamp(float d, float min, float max)
+{
     const float t = d < min ? min : d;
     return t > max ? max : t;
 }
@@ -208,8 +212,8 @@ float interpolate(
     const int32_t max,
     const float start_val,
     const float end_val,
-    const struct Vec2 *start_handle,
-    const struct Vec2 *end_handle
+    const struct skf_Vec2 *start_handle,
+    const struct skf_Vec2 *end_handle
 )
 {
     /* snapping behavior for None transition preset */
@@ -243,7 +247,7 @@ float interpolate(
 void interpolate_keyframes(
     const char *element,
     float *field,
-    const struct Vec_Keyframe *keyframes,
+    const struct skf_Vec_Keyframe *keyframes,
     const int32_t id,
     const int32_t frame,
     const int32_t blend_frames
@@ -277,14 +281,14 @@ void interpolate_keyframes(
             &keyframes->elements[next].end_handle
         );
 
-        const struct Vec2 z = {0.0f, 0.0f};
+        const struct skf_Vec2 z = {0.0f, 0.0f};
         *field = interpolate(current_frame, blend_frames, *field, result, &z, &z);
     }
 }
 
 void interpolate_bone(
-    struct Bone *bone,
-    const struct Vec_Keyframe *keyframes,
+    struct skf_Bone *bone,
+    const struct skf_Vec_Keyframe *keyframes,
     const int32_t bone_id,
     const int32_t frame,
     const int32_t blend_frame
@@ -345,14 +349,14 @@ void interpolate_bone(
 bool is_animated(
     const int32_t bone_id,
     const char *el, 
-    const struct Vec_Animation *anims
+    const struct skf_Vec_Animation *anims
 )
 {
     size_t anim_i, kf_i;
     for (anim_i = 0; anim_i < anims->size; anim_i++) {
-        const struct Animation *anim = &anims->elements[anim_i];
+        const struct skf_Animation *anim = &anims->elements[anim_i];
         for (kf_i = 0; kf_i < anim->keyframes.size; kf_i++) {
-            const struct Keyframe *kf = &anim->keyframes.elements[kf_i];
+            const struct skf_Keyframe *kf = &anim->keyframes.elements[kf_i];
             if (kf->bone_id == bone_id && kf->element == el)
                 return true;
         }
@@ -361,13 +365,13 @@ bool is_animated(
 }
 
 void reset_bone(
-    struct Bone *bone,
+    struct skf_Bone *bone,
     const int32_t frame,
     const int32_t blend_frame,
-    const struct Vec_Animation *anims
+    const struct skf_Vec_Animation *anims
 )
 {
-    const struct Vec2 z = {0.0f, 0.0f};
+    const struct skf_Vec2 z = {0.0f, 0.0f};
     if (!is_animated(bone->id, "PositionX", anims))
         bone->pos.x = interpolate(frame, blend_frame, bone->pos.x, bone->init_pos.x, &z, &z);
     if (!is_animated(bone->id, "PositionY", anims))
@@ -383,10 +387,10 @@ void reset_bone(
 }
 
 void animate(
-    struct Vec_Bone *bones,
-    const struct Vec_Animation *anims,
-    const struct Vec_int32_t *frames,
-    const struct Vec_int32_t *blend_frames
+    struct skf_Vec_Bone *bones,
+    const struct skf_Vec_Animation *anims,
+    const struct skf_Vec_int32_t *frames,
+    const struct skf_Vec_int32_t *blend_frames
 )
 {
     size_t a, b, bone_i;
