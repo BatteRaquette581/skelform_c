@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef char bool;
 #define true 1
@@ -337,12 +338,12 @@ void interpolate_bone(
     );
     prev_frame = get_prev_frame(keyframes, frame, "IkConstraint", bone->id);
     if (prev_frame != SIZE_MAX) {
-        bone->ik_constraint = keyframes->elements[prev_frame].value_str;
+        bone->ik_constraint = strdup(keyframes->elements[prev_frame].value_str);
     }
 
     prev_frame = get_prev_frame(keyframes, frame, "Texture", bone->id);
     if (prev_frame != SIZE_MAX) {
-        bone->ik_constraint = keyframes->elements[prev_frame].value_str;
+        bone->ik_constraint = strdup(keyframes->elements[prev_frame].value_str);
     }
 }
 
@@ -383,7 +384,7 @@ void reset_bone(
     if (!is_animated(bone->id, "ScaleY", anims))
         bone->scale.y = interpolate(frame, blend_frame, bone->scale.y, bone->init_scale.y, &z, &z);
     if (!is_animated(bone->id, "IkConstraint", anims))
-        bone->ik_constraint = bone->init_ik_constraint;
+        bone->ik_constraint = strdup(bone->init_ik_constraint);
 }
 
 void animate(
