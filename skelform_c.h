@@ -50,7 +50,7 @@ typedef char skf_bool;
 #define skf_Vec_append(vec, element) {                                                  \
     if (vec.capacity <= vec.size) {                                                     \
         if (vec.capacity == 0)                                                          \
-            vec.capacity = Vec_BASE_CAPACITY;                                           \
+            vec.capacity = skf_Vec_BASE_CAPACITY;                                       \
         else                                                                            \
             vec.capacity <<= 1;                                                         \
         vec.elements = realloc(vec.elements, vec.capacity * sizeof(*vec.elements));     \
@@ -64,11 +64,6 @@ struct skf_Vec2 {
     float x;
     float y;
 };
-
-skf_bool skf_Vec2_eq(struct skf_Vec2 v1, struct skf_Vec2 v2)
-{
-    return v1.x == v2.x && v1.y == v2.y;
-}
 
 struct skf_Vertex {
     struct skf_Vec2 pos;
