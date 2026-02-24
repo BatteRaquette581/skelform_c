@@ -25,6 +25,7 @@ SOFTWARE.
 
 #ifndef SKELFORM_C_H
 #define SKELFORM_C_H
+#define SKF_VERSION "0.4.0"
 
 #include <math.h>
 #include <stdint.h>
