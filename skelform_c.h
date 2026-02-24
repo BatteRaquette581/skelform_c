@@ -181,7 +181,7 @@ struct skf_Armature {
 };
 
 
-size_t get_prev_frame(
+size_t skf_get_prev_frame(
     const struct skf_Vec_Keyframe *keyframes,
     const int32_t frame, 
     const char *element,
@@ -197,7 +197,7 @@ size_t get_prev_frame(
     return prev;
 }
 
-size_t get_next_frame(
+size_t skf_get_next_frame(
     const struct skf_Vec_Keyframe *keyframes,
     const int32_t frame, 
     const char *element,
@@ -213,27 +213,27 @@ size_t get_next_frame(
     return SIZE_MAX;
 }
 
-float cubic_bezier(const float t, const float p1, const float p2)
+float skf_cubic_bezier(const float t, const float p1, const float p2)
 {
     const float u = 1.0f - t;
     return 3.0f * u * u * t * p1 + 3.0f * u * t * t * p2 + t * t * t;
 }
 
-float cubic_bezier_derivative(const float t, const float p1, const float p2)
+float skf_cubic_bezier_derivative(const float t, const float p1, const float p2)
 {
     const float u = 1.0f - t;
     return 3.0f * u * u * p1 + 6.0f * u * t * (p2 - p1) + 3.0f * t * t * (1.0f - p2);
 }
 
 /* https://stackoverflow.com/a/16659263 */
-float clamp(float d, float min, float max)
+float skf_clamp(float d, float min, float max)
 {
     const float t = d < min ? min : d;
     return t > max ? max : t;
 }
 
 #define SKF_NEWTON_RAPHSON_EPSILON 0.00001f
-float interpolate(
+float skf_interpolate(
     const int32_t current,
     const int32_t max,
     const float start_val,
@@ -254,23 +254,23 @@ float interpolate(
         float t = initial;
         size_t i;
         for (i = 0; i < 5; i++) {
-            const float x = cubic_bezier(t, start_handle->x, end_handle->x);
-            const float dx = cubic_bezier_derivative(t, start_handle->x, end_handle->x);
+            const float x = skf_cubic_bezier(t, start_handle->x, end_handle->x);
+            const float dx = skf_cubic_bezier_derivative(t, start_handle->x, end_handle->x);
             if (fabsf(dx) < SKF_NEWTON_RAPHSON_EPSILON)
                 break;
             t -= (x - initial) / dx;
-            t = clamp(t, 0.0f, 1.0f);
+            t = skf_clamp(t, 0.0f, 1.0f);
         }
 
         {
-            const float progress = cubic_bezier(t, start_handle->y, end_handle->y);
+            const float progress = skf_cubic_bezier(t, start_handle->y, end_handle->y);
             return start_val + (end_val - start_val) * progress;
         }
     }
 }
 
 /* Interpolate an f32 value from the specified keyframe data. */
-void interpolate_keyframes(
+void skf_interpolate_keyframes(
     const char *element,
     float *field,
     const struct skf_Vec_Keyframe *keyframes,
@@ -279,8 +279,8 @@ void interpolate_keyframes(
     const int32_t blend_frames
 )
 {
-    size_t prev = get_prev_frame(keyframes, frame, element, id);
-    size_t next = get_next_frame(keyframes, frame, element, id);
+    size_t prev = skf_get_prev_frame(keyframes, frame, element, id);
+    size_t next = skf_get_next_frame(keyframes, frame, element, id);
 
     /* ensure both frames are pointing somewhere */
     if (prev == SIZE_MAX) {
@@ -298,7 +298,7 @@ void interpolate_keyframes(
         const int32_t total_frames = keyframes->elements[next].frame - keyframes->elements[prev].frame;
         const int32_t current_frame = frame - keyframes->elements[prev].frame;
 
-        const float result = interpolate(
+        const float result = skf_interpolate(
             current_frame,
             total_frames,
             keyframes->elements[prev].value,
@@ -308,11 +308,11 @@ void interpolate_keyframes(
         );
 
         const struct skf_Vec2 z = {0.0f, 0.0f};
-        *field = interpolate(current_frame, blend_frames, *field, result, &z, &z);
+        *field = skf_interpolate(current_frame, blend_frames, *field, result, &z, &z);
     }
 }
 
-void interpolate_bone(
+void skf_interpolate_bone(
     struct skf_Bone *bone,
     const struct skf_Vec_Keyframe *keyframes,
     const int32_t bone_id,
@@ -321,7 +321,7 @@ void interpolate_bone(
 )
 {
     size_t prev_frame;
-    interpolate_keyframes(
+    skf_interpolate_keyframes(
         "PositionX",
         &bone->pos.x,
         keyframes,
@@ -329,7 +329,7 @@ void interpolate_bone(
         frame,
         blend_frame
     );
-    interpolate_keyframes(
+    skf_interpolate_keyframes(
         "PositionY",
         &bone->pos.y,
         keyframes,
@@ -337,7 +337,7 @@ void interpolate_bone(
         frame,
         blend_frame
     );
-    interpolate_keyframes(
+    skf_interpolate_keyframes(
         "Rotation",
         &bone->rot,
         keyframes,
@@ -345,7 +345,7 @@ void interpolate_bone(
         frame,
         blend_frame
     );
-    interpolate_keyframes(
+    skf_interpolate_keyframes(
         "ScaleX",
         &bone->scale.x,
         keyframes,
@@ -353,7 +353,7 @@ void interpolate_bone(
         frame,
         blend_frame
     );
-    interpolate_keyframes(
+    skf_interpolate_keyframes(
         "ScaleY",
         &bone->scale.y,
         keyframes,
@@ -361,18 +361,18 @@ void interpolate_bone(
         frame,
         blend_frame
     );
-    prev_frame = get_prev_frame(keyframes, frame, "IkConstraint", bone->id);
+    prev_frame = skf_get_prev_frame(keyframes, frame, "IkConstraint", bone->id);
     if (prev_frame != SIZE_MAX) {
         bone->ik_constraint = strdup(keyframes->elements[prev_frame].value_str);
     }
 
-    prev_frame = get_prev_frame(keyframes, frame, "Texture", bone->id);
+    prev_frame = skf_get_prev_frame(keyframes, frame, "Texture", bone->id);
     if (prev_frame != SIZE_MAX) {
         bone->ik_constraint = strdup(keyframes->elements[prev_frame].value_str);
     }
 }
 
-skf_bool is_animated(
+skf_bool skf_is_animated(
     const int32_t bone_id,
     const char *el, 
     const struct skf_Vec_Animation *anims
@@ -390,7 +390,7 @@ skf_bool is_animated(
     return skf_false;
 }
 
-void reset_bone(
+void skf_reset_bone(
     struct skf_Bone *bone,
     const int32_t frame,
     const int32_t blend_frame,
@@ -398,21 +398,21 @@ void reset_bone(
 )
 {
     const struct skf_Vec2 z = {0.0f, 0.0f};
-    if (!is_animated(bone->id, "PositionX", anims))
-        bone->pos.x = interpolate(frame, blend_frame, bone->pos.x, bone->init_pos.x, &z, &z);
-    if (!is_animated(bone->id, "PositionY", anims))
-        bone->pos.y = interpolate(frame, blend_frame, bone->pos.y, bone->init_pos.y, &z, &z);
-    if (!is_animated(bone->id, "Rotation", anims))
-        bone->rot = interpolate(frame, blend_frame, bone->rot, bone->init_rot, &z, &z);
-    if (!is_animated(bone->id, "ScaleX", anims))
-        bone->scale.x = interpolate(frame, blend_frame, bone->scale.x, bone->init_scale.x, &z, &z);
-    if (!is_animated(bone->id, "ScaleY", anims))
-        bone->scale.y = interpolate(frame, blend_frame, bone->scale.y, bone->init_scale.y, &z, &z);
-    if (!is_animated(bone->id, "IkConstraint", anims))
+    if (!skf_is_animated(bone->id, "PositionX", anims))
+        bone->pos.x = skf_interpolate(frame, blend_frame, bone->pos.x, bone->init_pos.x, &z, &z);
+    if (!skf_is_animated(bone->id, "PositionY", anims))
+        bone->pos.y = skf_interpolate(frame, blend_frame, bone->pos.y, bone->init_pos.y, &z, &z);
+    if (!skf_is_animated(bone->id, "Rotation", anims))
+        bone->rot = skf_interpolate(frame, blend_frame, bone->rot, bone->init_rot, &z, &z);
+    if (!skf_is_animated(bone->id, "ScaleX", anims))
+        bone->scale.x = skf_interpolate(frame, blend_frame, bone->scale.x, bone->init_scale.x, &z, &z);
+    if (!skf_is_animated(bone->id, "ScaleY", anims))
+        bone->scale.y = skf_interpolate(frame, blend_frame, bone->scale.y, bone->init_scale.y, &z, &z);
+    if (!skf_is_animated(bone->id, "IkConstraint", anims))
         bone->ik_constraint = strdup(bone->init_ik_constraint);
 }
 
-void animate(
+void skf_animate(
     struct skf_Vec_Bone *bones,
     const struct skf_Vec_Animation *anims,
     const struct skf_Vec_int32_t *frames,
@@ -422,7 +422,7 @@ void animate(
     size_t a, b, bone_i;
     for (a = 0; a < anims->size; a++) {
         for (b = 0; b < bones->size; b++) {
-            interpolate_bone(
+            skf_interpolate_bone(
                 &bones->elements[b],
                 &anims->elements[a].keyframes,
                 bones->elements[b].id,
@@ -433,7 +433,7 @@ void animate(
     }
 
     for (bone_i = 0; bone_i < bones->size; bone_i++) {
-        reset_bone(
+        skf_reset_bone(
             &bones->elements[bone_i],
             frames->elements[0],
             blend_frames->elements[0],
