@@ -57,7 +57,6 @@ typedef char skf_bool;
     }                                                                                   \
     vec.elements[vec.size++] = element;                                                 \
 }
-skf_Vec(int32_t);
 skf_Vec(uint32_t);
 
 struct skf_Vec2 {
@@ -86,8 +85,8 @@ struct skf_Keyframe {
     struct skf_Vec2 end_handle;
     const char *element;
     const char *value_str;
-    int32_t frame;
-    int32_t bone_id;
+    uint32_t frame;
+    uint32_t bone_id;
     float value;
     float label_top;
     enum skf_HandlePreset handle_preset;
@@ -97,12 +96,12 @@ skf_Vec_struct(Keyframe);
 struct skf_Animation {
     struct skf_Vec_Keyframe keyframes;
     const char *name;
-    int32_t fps;
+    uint32_t fps;
 };
 skf_Vec_struct(Animation);
 
 struct skf_BoneBindVert {
-    int32_t id;
+    uint32_t id;
     float weight;
 };
 skf_Vec_struct(BoneBindVert);
@@ -115,7 +114,7 @@ struct skf_BoneBind {
 skf_Vec_struct(BoneBind);
 
 struct skf_Bone {
-    struct skf_Vec_int32_t ik_bone_ids;
+    struct skf_Vec_uint32_t ik_bone_ids;
     struct skf_Vec_Vertex vertices;
     struct skf_Vec_uint32_t indices;
     struct skf_Vec_BoneBind binds;
@@ -128,7 +127,7 @@ struct skf_Bone {
     const char *ik_constraint;
     const char *ik_mode;
     const char *init_ik_constraint;
-    int32_t id;
+    uint32_t id;
     int32_t parent_id;
     int32_t ik_family_id;
     int32_t ik_target_id;
@@ -142,14 +141,14 @@ struct skf_Texture {
     struct skf_Vec2 offset;
     struct skf_Vec2 size;
     const char *name;
-    int32_t atlas_idx;
+    uint32_t atlas_idx;
 };
 skf_Vec_struct(Texture);
 
 struct skf_Style {
     struct skf_Vec_Texture textures;
     const char *name;
-    int32_t id;
+    uint32_t id;
     skf_bool active;
 };
 skf_Vec_struct(Style);
@@ -160,28 +159,22 @@ struct skf_TexAtlas {
 };
 skf_Vec_struct(TexAtlas);
 
-struct skf_Metadata {
-    size_t last_anim;
-    int32_t last_frame;
-};
-
 struct skf_Armature {
-    struct skf_Vec_int32_t ik_root_ids;
+    struct skf_Vec_uint32_t ik_root_ids;
     struct skf_Vec_Bone bones;
     struct skf_Vec_Animation animations;
     struct skf_Vec_Texture textures;
     struct skf_Vec_Style styles;
     struct skf_Vec_TexAtlas atlases;
-    struct skf_Metadata metadata;
     skf_bool baked_ik;
 };
 
 
 size_t skf_get_prev_frame(
     const struct skf_Vec_Keyframe *keyframes,
-    const int32_t frame, 
+    const uint32_t frame, 
     const char *element,
-    const int32_t id
+    const uint32_t id
 )
 {
     size_t i, prev = SIZE_MAX;
@@ -195,9 +188,9 @@ size_t skf_get_prev_frame(
 
 size_t skf_get_next_frame(
     const struct skf_Vec_Keyframe *keyframes,
-    const int32_t frame, 
+    const uint32_t frame, 
     const char *element,
-    const int32_t id
+    const uint32_t id
 )
 {
     size_t i;
@@ -230,8 +223,8 @@ float skf_clamp(float d, float min, float max)
 
 #define SKF_NEWTON_RAPHSON_EPSILON 0.00001f
 float skf_interpolate(
-    const int32_t current,
-    const int32_t max,
+    const uint32_t current,
+    const uint32_t max,
     const float start_val,
     const float end_val,
     const struct skf_Vec2 *start_handle,
@@ -270,9 +263,9 @@ void skf_interpolate_keyframes(
     const char *element,
     float *field,
     const struct skf_Vec_Keyframe *keyframes,
-    const int32_t id,
-    const int32_t frame,
-    const int32_t blend_frames
+    const uint32_t id,
+    const uint32_t frame,
+    const uint32_t blend_frames
 )
 {
     size_t prev = skf_get_prev_frame(keyframes, frame, element, id);
@@ -291,8 +284,8 @@ void skf_interpolate_keyframes(
     }
 
     {
-        const int32_t total_frames = keyframes->elements[next].frame - keyframes->elements[prev].frame;
-        const int32_t current_frame = frame - keyframes->elements[prev].frame;
+        const uint32_t total_frames = keyframes->elements[next].frame - keyframes->elements[prev].frame;
+        const uint32_t current_frame = frame - keyframes->elements[prev].frame;
 
         const float result = skf_interpolate(
             current_frame,
@@ -311,9 +304,9 @@ void skf_interpolate_keyframes(
 void skf_interpolate_bone(
     struct skf_Bone *bone,
     const struct skf_Vec_Keyframe *keyframes,
-    const int32_t bone_id,
-    const int32_t frame,
-    const int32_t blend_frame
+    const uint32_t bone_id,
+    const uint32_t frame,
+    const uint32_t blend_frame
 )
 {
     size_t prev_frame;
@@ -369,7 +362,7 @@ void skf_interpolate_bone(
 }
 
 skf_bool skf_is_animated(
-    const int32_t bone_id,
+    const uint32_t bone_id,
     const char *el, 
     const struct skf_Vec_Animation *anims
 )
@@ -388,8 +381,8 @@ skf_bool skf_is_animated(
 
 void skf_reset_bone(
     struct skf_Bone *bone,
-    const int32_t frame,
-    const int32_t blend_frame,
+    const uint32_t frame,
+    const uint32_t blend_frame,
     const struct skf_Vec_Animation *anims
 )
 {
@@ -411,8 +404,8 @@ void skf_reset_bone(
 void skf_animate(
     struct skf_Vec_Bone *bones,
     const struct skf_Vec_Animation *anims,
-    const struct skf_Vec_int32_t *frames,
-    const struct skf_Vec_int32_t *blend_frames
+    const struct skf_Vec_uint32_t *frames,
+    const struct skf_Vec_uint32_t *blend_frames
 )
 {
     size_t a, b, bone_i;
