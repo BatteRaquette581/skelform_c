@@ -1,3 +1,28 @@
+/*
+MIT License
+
+Copyright (c) 2026 BatteRaquette581
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+
 #ifndef SKELFORM_C_H
 #define SKELFORM_C_H
 
@@ -6,9 +31,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef char bool;
-#define true 1
-#define false 0
+typedef char skf_bool;
+#define skf_true 1
+#define skf_false 0
 
 #define skf_Vec_BASE_CAPACITY 8
 #define skf_Vec(T) struct skf_Vec_##T { \
@@ -39,7 +64,7 @@ struct skf_Vec2 {
     float y;
 };
 
-bool skf_Vec2_eq(struct skf_Vec2 v1, struct skf_Vec2 v2)
+skf_bool skf_Vec2_eq(struct skf_Vec2 v1, struct skf_Vec2 v2)
 {
     return v1.x == v2.x && v1.y == v2.y;
 }
@@ -89,7 +114,7 @@ skf_Vec_struct(BoneBindVert);
 struct skf_BoneBind {
     struct skf_Vec_BoneBindVert verts;
     int32_t bone_id;
-    bool is_path;
+    skf_bool is_path;
 };
 skf_Vec_struct(BoneBind);
 
@@ -129,7 +154,7 @@ struct skf_Style {
     struct skf_Vec_Texture textures;
     const char *name;
     int32_t id;
-    bool active;
+    skf_bool active;
 };
 skf_Vec_struct(Style);
 
@@ -152,7 +177,7 @@ struct skf_Armature {
     struct skf_Vec_Style styles;
     struct skf_Vec_TexAtlas atlases;
     struct skf_Metadata metadata;
-    bool baked_ik;
+    skf_bool baked_ik;
 };
 
 
@@ -207,7 +232,7 @@ float clamp(float d, float min, float max)
     return t > max ? max : t;
 }
 
-#define NEWTON_RAPHSON_EPSILON 0.00001f
+#define SKF_NEWTON_RAPHSON_EPSILON 0.00001f
 float interpolate(
     const int32_t current,
     const int32_t max,
@@ -231,7 +256,7 @@ float interpolate(
         for (i = 0; i < 5; i++) {
             const float x = cubic_bezier(t, start_handle->x, end_handle->x);
             const float dx = cubic_bezier_derivative(t, start_handle->x, end_handle->x);
-            if (fabsf(dx) < NEWTON_RAPHSON_EPSILON)
+            if (fabsf(dx) < SKF_NEWTON_RAPHSON_EPSILON)
                 break;
             t -= (x - initial) / dx;
             t = clamp(t, 0.0f, 1.0f);
@@ -347,7 +372,7 @@ void interpolate_bone(
     }
 }
 
-bool is_animated(
+skf_bool is_animated(
     const int32_t bone_id,
     const char *el, 
     const struct skf_Vec_Animation *anims
@@ -359,10 +384,10 @@ bool is_animated(
         for (kf_i = 0; kf_i < anim->keyframes.size; kf_i++) {
             const struct skf_Keyframe *kf = &anim->keyframes.elements[kf_i];
             if (kf->bone_id == bone_id && kf->element == el)
-                return true;
+                return skf_true;
         }
     }
-    return false;
+    return skf_false;
 }
 
 void reset_bone(
