@@ -59,6 +59,13 @@ typedef char skf_bool;
 }
 skf_Vec(uint32_t);
 
+struct skf_Tint {
+    float r;
+    float g;
+    float b;
+    float a;
+};
+
 struct skf_Vec2 {
     float x;
     float y;
@@ -118,22 +125,29 @@ struct skf_Bone {
     struct skf_Vec_Vertex vertices;
     struct skf_Vec_uint32_t indices;
     struct skf_Vec_BoneBind binds;
+    struct skf_Tint tint;
+    struct skf_Tint init_tint;
     struct skf_Vec2 scale;
     struct skf_Vec2 pos;
     struct skf_Vec2 init_scale;
     struct skf_Vec2 init_pos;
     const char *name;
     const char *tex;
+    const char *init_tex;
     const char *ik_constraint;
-    const char *ik_mode;
     const char *init_ik_constraint;
+    const char *ik_mode;
+    const char *init_ik_mode;
     uint32_t id;
     int32_t parent_id;
     int32_t ik_family_id;
     int32_t ik_target_id;
+    int32_t zindex;
+    int32_t init_zindex;
     float rot;
-    float zindex;
     float init_rot;
+    skf_bool hidden;
+    skf_bool init_hidden;
 };
 skf_Vec_struct(Bone);
 
@@ -301,6 +315,18 @@ void skf_interpolate_keyframes(
     }
 }
 
+#define skf_interpolate_bone_next_frame(element, field, kf_value) {       \
+    prev_frame = skf_get_prev_frame(keyframes, frame, element, bone->id); \
+    if (prev_frame != SIZE_MAX) {                                         \
+        field = keyframes->elements[prev_frame].kf_value;                 \
+    }                                                                     \
+}
+#define skf_interpolate_bone_next_frame_string(element, field) {          \
+    prev_frame = skf_get_prev_frame(keyframes, frame, element, bone->id); \
+    if (prev_frame != SIZE_MAX) {                                         \
+        field = strdup(keyframes->elements[prev_frame].value_str);        \
+    }                                                                     \
+}
 void skf_interpolate_bone(
     struct skf_Bone *bone,
     const struct skf_Vec_Keyframe *keyframes,
@@ -350,15 +376,42 @@ void skf_interpolate_bone(
         frame,
         blend_frame
     );
-    prev_frame = skf_get_prev_frame(keyframes, frame, "IkConstraint", bone->id);
-    if (prev_frame != SIZE_MAX) {
-        bone->ik_constraint = strdup(keyframes->elements[prev_frame].value_str);
-    }
-
-    prev_frame = skf_get_prev_frame(keyframes, frame, "Texture", bone->id);
-    if (prev_frame != SIZE_MAX) {
-        bone->ik_constraint = strdup(keyframes->elements[prev_frame].value_str);
-    }
+    skf_interpolate_keyframes(
+        "TintR",
+        &bone->tint.r,
+        keyframes,
+        bone_id,
+        frame,
+        blend_frame
+    );
+    skf_interpolate_keyframes(
+        "TintG",
+        &bone->tint.g,
+        keyframes,
+        bone_id,
+        frame,
+        blend_frame
+    );
+    skf_interpolate_keyframes(
+        "TintB",
+        &bone->tint.b,
+        keyframes,
+        bone_id,
+        frame,
+        blend_frame
+    );
+    skf_interpolate_keyframes(
+        "TintA",
+        &bone->tint.a,
+        keyframes,
+        bone_id,
+        frame,
+        blend_frame
+    );
+    skf_interpolate_bone_next_frame_string("Texture", bone->tex);
+    skf_interpolate_bone_next_frame       ("Zindex", bone->zindex, value);
+    skf_interpolate_bone_next_frame_string("IkMode", bone->ik_mode);
+    skf_interpolate_bone_next_frame_string("IkConstraint", bone->ik_constraint);
 }
 
 skf_bool skf_is_animated(
@@ -379,6 +432,18 @@ skf_bool skf_is_animated(
     return skf_false;
 }
 
+#define skf_reset_bone_interpolate(element, field, init_field) {                \
+    if (!skf_is_animated(bone->id, element, anims))                             \
+        field = skf_interpolate(frame, blend_frame, field, init_field, &z, &z); \
+}
+#define skf_reset_bone_hard_interpolate(element, field, init_field) { \
+    if (!skf_is_animated(bone->id, element, anims))                   \
+        field = init_field;                                           \
+}
+#define skf_reset_bone_hard_interpolate_string(element, field, init_field) { \
+    if (!skf_is_animated(bone->id, element, anims))                          \
+        field = strdup(init_field);                                          \
+}
 void skf_reset_bone(
     struct skf_Bone *bone,
     const uint32_t frame,
@@ -387,18 +452,16 @@ void skf_reset_bone(
 )
 {
     const struct skf_Vec2 z = {0.0f, 0.0f};
-    if (!skf_is_animated(bone->id, "PositionX", anims))
-        bone->pos.x = skf_interpolate(frame, blend_frame, bone->pos.x, bone->init_pos.x, &z, &z);
-    if (!skf_is_animated(bone->id, "PositionY", anims))
-        bone->pos.y = skf_interpolate(frame, blend_frame, bone->pos.y, bone->init_pos.y, &z, &z);
-    if (!skf_is_animated(bone->id, "Rotation", anims))
-        bone->rot = skf_interpolate(frame, blend_frame, bone->rot, bone->init_rot, &z, &z);
-    if (!skf_is_animated(bone->id, "ScaleX", anims))
-        bone->scale.x = skf_interpolate(frame, blend_frame, bone->scale.x, bone->init_scale.x, &z, &z);
-    if (!skf_is_animated(bone->id, "ScaleY", anims))
-        bone->scale.y = skf_interpolate(frame, blend_frame, bone->scale.y, bone->init_scale.y, &z, &z);
-    if (!skf_is_animated(bone->id, "IkConstraint", anims))
-        bone->ik_constraint = strdup(bone->init_ik_constraint);
+    skf_reset_bone_interpolate            ("PositionX", bone->pos.x, bone->init_pos.x);
+    skf_reset_bone_interpolate            ("PositionY", bone->pos.y, bone->init_pos.y);
+    skf_reset_bone_interpolate            ("Rotation", bone->rot, bone->init_rot);
+    skf_reset_bone_interpolate            ("ScaleX", bone->scale.x, bone->init_scale.x);
+    skf_reset_bone_interpolate            ("ScaleY", bone->scale.y, bone->init_scale.y);
+    skf_reset_bone_hard_interpolate_string("Texture", bone->tex, bone->init_tex);
+    skf_reset_bone_hard_interpolate       ("Zindex", bone->zindex, bone->init_zindex);
+    skf_reset_bone_hard_interpolate       ("Hidden", bone->hidden, bone->init_hidden);
+    skf_reset_bone_hard_interpolate_string("IkMode", bone->ik_mode, bone->init_ik_mode);
+    skf_reset_bone_hard_interpolate_string("IkConstraint", bone->ik_constraint, bone->init_ik_constraint);
 }
 
 void skf_animate(
