@@ -974,14 +974,14 @@ uint32_t skf_format_frame(
 }
 
 uint32_t skf_time_frame(
-    const float elapsed_time_epoch_seconds,
+    const float elapsed_time_seconds,
     const struct skf_Animation *animation,
     skf_bool reverse,
     skf_bool is_loop
 )
 {
     const float frametime = 1.0f / animation->fps;
-    uint32_t frame = elapsed_time_epoch_seconds / frametime;
+    uint32_t frame = elapsed_time_seconds / frametime;
     frame = skf_format_frame(&frame, animation, reverse, is_loop);
     return frame;
 }
