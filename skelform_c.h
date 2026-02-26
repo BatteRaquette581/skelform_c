@@ -791,6 +791,11 @@ struct skf_Vec_inverse_kinematics_rotation skf_inverse_kinematics(
                     skf_fabrik(&family_bones, root, target);
             else
                 skf_arc_ik(&family_bones, root, target);
+
+            for (b = 0; b < family_bones.size; b++) {
+                uint32_t bone_id = family_bones.elements[b].id;
+                bones->elements[bone_id].pos = family_bones.elements[b].pos;
+            }
         }
 
         skf_point_bones(bones, family);
