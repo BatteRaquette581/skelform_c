@@ -61,13 +61,13 @@ typedef char skf_bool;
 }
 #define skf_Vec_contains(vec, element, destination) {           \
     size_t _skf_vec_i;                                          \
+    destination = skf_false;                                    \
     for (_skf_vec_i = 0; _skf_vec_i < vec.size; _skf_vec_i++) { \
         if (vec.elements[_skf_vec_i] == element) {              \
             destination = skf_true;                             \
             break;                                              \
         }                                                       \
     }                                                           \
-    destination = skf_false;                                    \
 }
 skf_Vec(uint32_t);
 skf_Vec(float);
@@ -213,7 +213,7 @@ size_t skf_get_prev_frame(
     size_t i, prev = SIZE_MAX;
     for (i = 0; i < keyframes->size; i++) {
         const struct skf_Keyframe *kf = &keyframes->elements[i];
-        if (kf->frame <= frame && kf->element == element && kf->bone_id == id)
+        if (kf->frame <= frame && strcmp(kf->element, element) == 0 && kf->bone_id == id)
             prev = i;
     }
     return prev;
@@ -604,7 +604,7 @@ float skf_vec_inverse_kinematics_rotation_get(
 {
     size_t i;
     for (i = 0; i < ik_rots->size; i++) {
-        struct skf_inverse_kinematics_rotation *ik_rot = &ik_rots->elements[i];
+        const struct skf_inverse_kinematics_rotation *ik_rot = &ik_rots->elements[i];
         if (ik_rot->ik_bone_id == ik_bone_id)
             return ik_rot->rotation;
     }
@@ -612,7 +612,7 @@ float skf_vec_inverse_kinematics_rotation_get(
 }
 
 void skf_inheritance(
-    const struct skf_Vec_Bone *bones,
+    struct skf_Vec_Bone *bones,
     const struct skf_Vec_inverse_kinematics_rotation *ik_rots
 )
 {   
@@ -647,9 +647,10 @@ void skf_fabrik(
     size_t b, b_reversed;
     for (b = 1; b <= bones->size; b++) {
         b_reversed = bones->size - b;
-        const struct skf_Vec2 dv = skf_vec2_sub(next_pos, bones->elements[b_reversed].pos);
+        const struct skf_Vec2 dv = skf_vec2_normalize(
+            skf_vec2_sub(next_pos, bones->elements[b_reversed].pos));
         const struct skf_Vec2 next_length_vector = {next_length, next_length};
-        const struct skf_Vec2 length = skf_vec2_normalize(skf_vec2_mul(dv, next_length_vector));
+        const struct skf_Vec2 length = skf_vec2_mul(dv, next_length_vector);
         if (b_reversed != 0) {
             next_length = skf_vec2_magnitude(skf_vec2_sub(
                 bones->elements[b_reversed].pos, bones->elements[b_reversed - 1].pos));
@@ -659,9 +660,10 @@ void skf_fabrik(
 
     /* backward-reaching */
     for (b = 1; b <= bones->size; b++) {
-        const struct skf_Vec2 dv = skf_vec2_sub(prev_pos, bones->elements[b].pos);
-        const struct skf_Vec2 next_length_vector = {prev_length, prev_length};
-        const struct skf_Vec2 length = skf_vec2_normalize(skf_vec2_mul(dv, next_length_vector));
+        const struct skf_Vec2 dv = skf_vec2_normalize(
+            skf_vec2_sub(prev_pos, bones->elements[b].pos));
+        const struct skf_Vec2 prev_length_vector = {prev_length, prev_length};
+        const struct skf_Vec2 length = skf_vec2_mul(dv, prev_length_vector);
         if (b != bones->size - 1) {
             prev_length = skf_vec2_magnitude(skf_vec2_sub(
                 bones->elements[b].pos, bones->elements[b + 1].pos));
@@ -678,6 +680,7 @@ void skf_arc_ik(
 {
     /* determine where bones will be on the arc line (ranging from 0 to 1) */
     struct skf_Vec_float dist = {0};
+    skf_Vec_append(dist, 0.0f);
 
     const float max_length = skf_vec2_magnitude(skf_vec2_sub(bones->elements[bones->size - 1].pos, root));
     float curr_length = 0.0f;
@@ -712,7 +715,7 @@ void skf_arc_ik(
 }
 
 void skf_point_bones(
-    const struct skf_Vec_Bone *bones,
+    struct skf_Vec_Bone *bones,
     const struct skf_Bone *family
 )
 {
@@ -735,7 +738,7 @@ void skf_point_bones(
 }
 
 void skf_apply_constraints(
-    const struct skf_Vec_Bone *bones,
+    struct skf_Vec_Bone *bones,
     const struct skf_Bone *family
 )
 {
@@ -760,7 +763,7 @@ void skf_apply_constraints(
 }
 
 struct skf_Vec_inverse_kinematics_rotation skf_inverse_kinematics(
-    const struct skf_Vec_Bone *bones,
+    struct skf_Vec_Bone *bones,
     const struct skf_Vec_uint32_t *ik_root_ids
 )
 {
@@ -817,7 +820,7 @@ struct skf_Vec2 skf_inherit_vert(
     return *pos;
 }
 
-void skf_construct_verts(const struct skf_Vec_Bone *bones)
+void skf_construct_verts(struct skf_Vec_Bone *bones)
 {
     size_t b;
     for (b = 0; b < bones->size; b++) {
@@ -861,7 +864,8 @@ void skf_construct_verts(const struct skf_Vec_Bone *bones)
                         vert->pos
                     );
                     const struct skf_Vec2 weight_vec = {weight, weight};
-                    vert->pos = skf_vec2_add(end_pos, weight_vec);
+                    vert->pos = skf_vec2_add(vert->pos,
+                        skf_vec2_mul(end_pos, weight_vec));
                     continue;
                 }
 
@@ -925,7 +929,7 @@ void skf_construct_verts(const struct skf_Vec_Bone *bones)
     }
 }
 
-struct skf_Vec_Bone skf_construct(const struct skf_Armature *armature)
+struct skf_Vec_Bone skf_construct(struct skf_Armature *armature)
 {
     size_t i;
     struct skf_Vec_Bone bones = {0};
@@ -962,8 +966,8 @@ struct skf_Texture *skf_get_bone_texture(
 uint32_t skf_format_frame(
     uint32_t *frame,
     const struct skf_Animation *animation,
-    skf_bool reverse,
-    skf_bool is_loop
+    const skf_bool reverse,
+    const skf_bool is_loop
 )
 {
     uint32_t last_frame =
@@ -978,8 +982,8 @@ uint32_t skf_format_frame(
 uint32_t skf_time_frame(
     const float elapsed_time_seconds,
     const struct skf_Animation *animation,
-    skf_bool reverse,
-    skf_bool is_loop
+    const skf_bool reverse,
+    const skf_bool is_loop
 )
 {
     const float frametime = 1.0f / animation->fps;
