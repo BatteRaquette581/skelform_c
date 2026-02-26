@@ -229,7 +229,7 @@ size_t skf_get_next_frame(
     size_t i;
     for (i = 0; i < keyframes->size; i++) {
         const struct skf_Keyframe *kf = &keyframes->elements[i];
-        if (kf->frame > frame && kf->element == element && kf->bone_id == id)
+        if (kf->frame > frame && strcmp(kf->element, element) == 0 && kf->bone_id == id)
             return i;
     }
     return SIZE_MAX;
@@ -444,7 +444,7 @@ skf_bool skf_is_animated(
         const struct skf_Animation *anim = &anims->elements[anim_i];
         for (kf_i = 0; kf_i < anim->keyframes.size; kf_i++) {
             const struct skf_Keyframe *kf = &anim->keyframes.elements[kf_i];
-            if (kf->bone_id == bone_id && kf->element == el)
+            if (kf->bone_id == bone_id && strcmp(kf->element, el) == 0)
                 return skf_true;
         }
     }
@@ -808,6 +808,8 @@ struct skf_Vec_inverse_kinematics_rotation skf_inverse_kinematics(
 
         free(family_bones.elements);
     }
+
+    return ik_rots;
 }
 
 struct skf_Vec2 skf_inherit_vert(
@@ -824,7 +826,7 @@ void skf_construct_verts(struct skf_Vec_Bone *bones)
 {
     size_t b;
     for (b = 0; b < bones->size; b++) {
-        const struct skf_Bone *bone = &bones->elements[b];
+        struct skf_Bone *bone = &bones->elements[b];
 
         /* move vertex to main bone. */
         /* this will be overridden if vertex has a bind. */
@@ -939,7 +941,7 @@ struct skf_Vec_Bone skf_construct(struct skf_Armature *armature)
     if (!armature->baked_ik) {
         struct skf_Vec_inverse_kinematics_rotation ik_rots = {0};
         skf_inheritance(&bones, &ik_rots);
-        ik_rots = skf_inverse_kinematics(&armature->bones, &armature->ik_root_ids);
+        ik_rots = skf_inverse_kinematics(&bones, &armature->ik_root_ids);
         skf_inheritance(&bones, &ik_rots);
         free(ik_rots.elements);
     }
@@ -970,8 +972,9 @@ uint32_t skf_format_frame(
     const skf_bool is_loop
 )
 {
-    uint32_t last_frame =
-        animation->keyframes.elements[animation->keyframes.size - 1].frame;
+    uint32_t last_frame = (animation->keyframes.size == 0) ?
+        (animation->keyframes.elements[animation->keyframes.size - 1].frame) :
+        0;
     if (is_loop)
         *frame = *frame % (last_frame + 1);
     if (reverse)
