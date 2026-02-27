@@ -665,7 +665,7 @@ void skf_fabrik(
     }
 
     /* backward-reaching */
-    for (b = 1; b <= bones->size; b++) {
+    for (b = 0; b <= bones->size; b++) {
         const struct skf_Vec2 dv = skf_vec2_normalize(
             skf_vec2_sub(prev_pos, bones->elements[b].pos));
         struct skf_Vec2 prev_length_vector;
