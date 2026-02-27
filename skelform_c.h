@@ -945,10 +945,12 @@ struct skf_Vec_Bone skf_construct(struct skf_Armature *armature)
 
     struct skf_Vec_inverse_kinematics_rotation ik_rots = {0};
     if (!armature->baked_ik) {
-        skf_inheritance(&bones, &ik_rots);
+        struct skf_Vec_Bone inheritance_bones = {0};
         for (i = 0; i < armature->bones.size; i++)
-            skf_Vec_append(bones, skf_bone_shallow_copy(&armature->bones.elements[i]));
-        ik_rots = skf_inverse_kinematics(&bones, &armature->ik_root_ids);
+            skf_Vec_append(inheritance_bones, skf_bone_shallow_copy(&armature->bones.elements[i]));
+        skf_inheritance(&inheritance_bones, &ik_rots);
+        ik_rots = skf_inverse_kinematics(&inheritance_bones, &armature->ik_root_ids);
+        free(inheritance_bones.elements);
     }
     skf_inheritance(&bones, &ik_rots);
     skf_construct_verts(&bones);
