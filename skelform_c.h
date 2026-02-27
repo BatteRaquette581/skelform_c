@@ -647,28 +647,38 @@ void skf_fabrik(
     size_t b, b_reversed;
     for (b = 1; b <= bones->size; b++) {
         b_reversed = bones->size - b;
-        const struct skf_Vec2 dv = skf_vec2_normalize(
-            skf_vec2_sub(next_pos, bones->elements[b_reversed].pos));
-        const struct skf_Vec2 next_length_vector = {next_length, next_length};
-        const struct skf_Vec2 length = skf_vec2_mul(dv, next_length_vector);
-        if (b_reversed != 0) {
-            next_length = skf_vec2_magnitude(skf_vec2_sub(
-                bones->elements[b_reversed].pos, bones->elements[b_reversed - 1].pos));
+        {
+            const struct skf_Vec2 dv = skf_vec2_normalize(
+                skf_vec2_sub(next_pos, bones->elements[b_reversed].pos));
+            struct skf_Vec2 next_length_vector;
+            next_length_vector.x = next_length;
+            next_length_vector.y = next_length;
+            {
+                const struct skf_Vec2 length = skf_vec2_mul(dv, next_length_vector);
+                if (b_reversed != 0) {
+                    next_length = skf_vec2_magnitude(skf_vec2_sub(
+                        bones->elements[b_reversed].pos, bones->elements[b_reversed - 1].pos));
+                }
+                next_pos = bones->elements[b_reversed].pos = skf_vec2_sub(next_pos, length);
+            }
         }
-        next_pos = bones->elements[b_reversed].pos = skf_vec2_sub(next_pos, length);
     }
 
     /* backward-reaching */
     for (b = 1; b <= bones->size; b++) {
         const struct skf_Vec2 dv = skf_vec2_normalize(
             skf_vec2_sub(prev_pos, bones->elements[b].pos));
-        const struct skf_Vec2 prev_length_vector = {prev_length, prev_length};
-        const struct skf_Vec2 length = skf_vec2_mul(dv, prev_length_vector);
-        if (b != bones->size - 1) {
-            prev_length = skf_vec2_magnitude(skf_vec2_sub(
-                bones->elements[b].pos, bones->elements[b + 1].pos));
+        struct skf_Vec2 prev_length_vector;
+        prev_length_vector.x = prev_length;
+        prev_length_vector.y = prev_length;
+        {
+            const struct skf_Vec2 length = skf_vec2_mul(dv, prev_length_vector);
+            if (b != bones->size - 1) {
+                prev_length = skf_vec2_magnitude(skf_vec2_sub(
+                    bones->elements[b].pos, bones->elements[b + 1].pos));
+            }
+            prev_pos = bones->elements[b].pos = skf_vec2_sub(prev_pos, length);
         }
-        prev_pos = bones->elements[b].pos = skf_vec2_sub(prev_pos, length);
     }
 }
 
@@ -680,11 +690,11 @@ void skf_arc_ik(
 {
     /* determine where bones will be on the arc line (ranging from 0 to 1) */
     struct skf_Vec_float dist = {0};
-    skf_Vec_append(dist, 0.0f);
-
     const float max_length = skf_vec2_magnitude(skf_vec2_sub(bones->elements[bones->size - 1].pos, root));
     float curr_length = 0.0f;
     size_t b;
+    skf_Vec_append(dist, 0.0f);
+
     for (b = 1; b < bones->size; b++) {
         const float length = skf_vec2_magnitude(skf_vec2_sub(
             bones->elements[b].pos, bones->elements[b - 1].pos));
@@ -692,26 +702,32 @@ void skf_arc_ik(
         skf_Vec_append(dist, curr_length / max_length);
     }
 
-    const struct skf_Vec2 base = skf_vec2_sub(target, root);
-    const float base_angle = atan2(base.y, base.x);
-    float base_mag = skf_vec2_magnitude(base);
-    if (base_mag > max_length)
-        base_mag = max_length;
-    const float peak = max_length / base_mag;
-    const float valley = base_mag / max_length;
+    {
+        const struct skf_Vec2 base = skf_vec2_sub(target, root);
+        const float base_angle = atan2(base.y, base.x);
+        float base_mag = skf_vec2_magnitude(base);
+        if (base_mag > max_length)
+            base_mag = max_length;
 
-    for (b = 1; b < bones->size; b++) {
-        bones->elements[b].pos = (struct skf_Vec2) {
-            bones->elements[b].pos.x * valley,
-            root.y + (1.0f - peak) * sin(dist.elements[b] * 3.141592f) * base_mag,
-        };
+        {
+            const float peak = max_length / base_mag;
+            const float valley = base_mag / max_length;
 
-        const struct skf_Vec2 rotated = skf_vec2_rotate(skf_vec2_sub(
-            bones->elements[b].pos, root), base_angle);
-        bones->elements[b].pos = skf_vec2_add(rotated, root);
+            for (b = 1; b < bones->size; b++) {
+                bones->elements[b].pos.x *= valley;
+                bones->elements[b].pos.y = root.y + (1.0f - peak) 
+                    * sin(dist.elements[b] * 3.141592f) * base_mag;
+
+                {
+                    const struct skf_Vec2 rotated = skf_vec2_rotate(skf_vec2_sub(
+                        bones->elements[b].pos, root), base_angle);
+                    bones->elements[b].pos = skf_vec2_add(rotated, root);
+                }
+            }
+
+            free(dist.elements);
+        }
     }
-
-    free(dist.elements);
 }
 
 void skf_point_bones(
@@ -729,11 +745,14 @@ void skf_point_bones(
         if (i_reversed == ik_bones_size - 1) {
             continue;
         }
-        struct skf_Bone *bone = &bones->elements[family->ik_bone_ids.elements[i_reversed]];
+        {
+            struct skf_Bone *bone = &bones->elements[
+                family->ik_bone_ids.elements[i_reversed]];
 
-        const struct skf_Vec2 dir = skf_vec2_sub(tip_pos, bone->pos);
-        bone->rot = atan2(dir.y, dir.x);
-        tip_pos = bone->pos;
+            const struct skf_Vec2 dir = skf_vec2_sub(tip_pos, bone->pos);
+            bone->rot = atan2(dir.y, dir.x);
+            tip_pos = bone->pos;
+        }
     }
 }
 
@@ -774,44 +793,48 @@ struct skf_Vec_inverse_kinematics_rotation skf_inverse_kinematics(
         if (family->ik_target_id == -1)
             continue;
 
-        const struct skf_Vec2 root = bones->elements[family->ik_bone_ids.elements[0]].pos;
-        const struct skf_Vec2 target = bones->elements[family->ik_target_id].pos;
-        struct skf_Vec_Bone family_bones = {0};
-        for (b = 0; b < bones->size; b++) {
-            const struct skf_Bone *bone = &bones->elements[b];
-            skf_bool contains;
-            skf_Vec_contains(family->ik_bone_ids, bone->id, contains);
-            if (contains)
-                skf_Vec_append(family_bones, *bone);
-        }
-
-        if (family_bones.size > 0) {
-            if (strcmp(family->ik_mode, "FABRIK") == 0)
-                for (fabrik_step = 0; fabrik_step < 10; fabrik_step++)
-                    skf_fabrik(&family_bones, root, target);
-            else
-                skf_arc_ik(&family_bones, root, target);
-
-            for (b = 0; b < family_bones.size; b++) {
-                uint32_t bone_id = family_bones.elements[b].id;
-                bones->elements[bone_id].pos = family_bones.elements[b].pos;
+        {
+            const struct skf_Vec2 root = bones->elements[family->ik_bone_ids.elements[0]].pos;
+            const struct skf_Vec2 target = bones->elements[family->ik_target_id].pos;
+            struct skf_Vec_Bone family_bones = {0};
+            for (b = 0; b < bones->size; b++) {
+                const struct skf_Bone *bone = &bones->elements[b];
+                skf_bool contains;
+                skf_Vec_contains(family->ik_bone_ids, bone->id, contains);
+                if (contains)
+                    skf_Vec_append(family_bones, *bone);
             }
+
+            if (family_bones.size > 0) {
+                if (strcmp(family->ik_mode, "FABRIK") == 0)
+                    for (fabrik_step = 0; fabrik_step < 10; fabrik_step++)
+                        skf_fabrik(&family_bones, root, target);
+                else
+                    skf_arc_ik(&family_bones, root, target);
+
+                for (b = 0; b < family_bones.size; b++) {
+                    uint32_t bone_id = family_bones.elements[b].id;
+                    bones->elements[bone_id].pos = family_bones.elements[b].pos;
+                }
+            }
+
+            skf_point_bones(bones, family);
+            skf_apply_constraints(bones, family);
+
+            for (b = 0; b < family->ik_bone_ids.size; b++) {
+                if (b == family->ik_bone_ids.size - 1)
+                    continue;
+                {
+                    struct skf_inverse_kinematics_rotation entry;
+                    entry.ik_bone_id = family->ik_bone_ids.elements[b];
+                    entry.rotation = bones->elements[
+                        family->ik_bone_ids.elements[b]].rot;
+                    skf_Vec_append(ik_rots, entry);
+                }
+            }
+
+            free(family_bones.elements);
         }
-
-        skf_point_bones(bones, family);
-        skf_apply_constraints(bones, family);
-
-        for (b = 0; b < family->ik_bone_ids.size; b++) {
-            if (b == family->ik_bone_ids.size - 1)
-                continue;
-            const struct skf_inverse_kinematics_rotation entry = {
-                family->ik_bone_ids.elements[b],
-                bones->elements[family->ik_bone_ids.elements[b]].rot
-            };
-            skf_Vec_append(ik_rots, entry);
-        }
-
-        free(family_bones.elements);
     }
 
     return ik_rots;
@@ -847,90 +870,101 @@ void skf_construct_verts(struct skf_Vec_Bone *bones)
             if (b_id == -1)
                 continue;
 
-            struct skf_Bone *bind_bone;
-            for (bbi = 0; bbi < bones->size; bbi++) {
-                struct skf_Bone *bb = &bones->elements[bbi];
-                if (bb->id == (uint32_t) b_id) {
-                    bind_bone = bb;
-                    break;
-                }
-            }
-            const struct skf_BoneBind *bind =
-                &bones->elements[b].binds.elements[bi];
-            for (v = 0; v < bind->verts.size; v++) {
-                size_t bone_i;
-                const uint32_t vert_id = bind->verts.elements[v].id;
-
-                if (!bind->is_path) {
-                    /* weights */
-                    struct skf_Vertex *vert =
-                        &bones->elements[b].vertices.elements[vert_id];
-                    const float weight = bind->verts.elements[v].weight;
-                    const struct skf_Vec2 end_pos = skf_vec2_sub(
-                        skf_inherit_vert(&vert->init_pos, bind_bone),
-                        vert->pos
-                    );
-                    const struct skf_Vec2 weight_vec = {weight, weight};
-                    vert->pos = skf_vec2_add(vert->pos,
-                        skf_vec2_mul(end_pos, weight_vec));
-                    continue;
-                }
-
-                /* pathing:
-                Bone binds are treated as one continuous line.
-                Vertices will follow along this path.
-
-                get previous and next bone*/
-                struct skf_Vec_BoneBind *binds = &bones->elements[b].binds;
-                size_t prev = bi;
-                if (prev > 0)
-                    prev--;
-                size_t next = bi + 1;
-                if (next >= binds->size)
-                    next = binds->size - 1;
-                struct skf_Bone *prev_bone = NULL;
-                struct skf_Bone *next_bone = NULL;
-                for (bone_i = 0; bone_i < bones->size; bone_i++) {
-                    struct skf_Bone *b = &bones->elements[bone_i];
-                    if (b->id ==
-                        (uint32_t) binds->elements[prev].bone_id) {
-                        prev_bone = b;
-                    } else if (b->id ==
-                        (uint32_t) binds->elements[next].bone_id) {
-                        next_bone = b;
-                    }
-                    if (prev_bone != NULL && next_bone != NULL)
+            {
+                struct skf_Bone *bind_bone;
+                struct skf_BoneBind *bind;
+                for (bbi = 0; bbi < bones->size; bbi++) {
+                    struct skf_Bone *bb = &bones->elements[bbi];
+                    if (bb->id == (uint32_t) b_id) {
+                        bind_bone = bb;
                         break;
+                    }
                 }
+                bind = &bones->elements[b].binds.elements[bi];
+                for (v = 0; v < bind->verts.size; v++) {
+                    struct skf_Bone *prev_bone = NULL, *next_bone = NULL;
+                    struct skf_Vec_BoneBind *binds;
+                    size_t bone_i, prev, next;
+                    const uint32_t vert_id = bind->verts.elements[v].id;
 
-                /* get the average of normals between previous
-                bone, this bone, and next bone */
-                const struct skf_Vec2 prev_dir = skf_vec2_sub(
-                    bind_bone->pos, prev_bone->pos);
-                const struct skf_Vec2 next_dir = skf_vec2_sub(
-                    next_bone->pos, bind_bone->pos);
-                const struct skf_Vec2 prev_normal = skf_vec2_normalize(
-                    (struct skf_Vec2) {-prev_dir.y, prev_dir.x});
-                const struct skf_Vec2 next_normal = skf_vec2_normalize(
-                    (struct skf_Vec2) {-next_dir.y, next_dir.x});
-                const struct skf_Vec2 average = skf_vec2_add(prev_normal,
-                    next_normal);
-                const float normal_angle = atan2(average.y, average.x);
+                    if (!bind->is_path) {
+                        /* weights */
+                        struct skf_Vertex *vert =
+                            &bones->elements[b].vertices.elements[vert_id];
+                        const float weight = bind->verts.elements[v].weight;
+                        const struct skf_Vec2 end_pos = skf_vec2_sub(
+                            skf_inherit_vert(&vert->init_pos, bind_bone),
+                            vert->pos
+                        );
+                        struct skf_Vec2 weight_vec;
+                        weight_vec.x = weight;
+                        weight_vec.y = weight;
+                        vert->pos = skf_vec2_add(vert->pos,
+                            skf_vec2_mul(end_pos, weight_vec));
+                        continue;
+                    }
 
-                /* move vertex to bind bone, then just adjust it to
-                'bounce' off the line's surface */
-                struct skf_Vertex* vert =
-                    &bones->elements[b].vertices.elements[vert_id];
-                vert->pos = skf_vec2_add(vert->init_pos, bind_bone->pos);
-                const struct skf_Vec2 rotated = skf_vec2_rotate(
-                    skf_vec2_sub(vert->pos, bind_bone->pos),
-                    normal_angle
-                );
-                const float weight = bind->verts.elements[v].weight;
-                vert->pos = skf_vec2_add(
-                    bind_bone->pos,
-                    skf_vec2_mul(rotated, (struct skf_Vec2) {weight, weight})
-                );
+                    /* pathing:
+                    Bone binds are treated as one continuous line.
+                    Vertices will follow along this path.
+
+                    get previous and next bone*/
+                    binds = &bones->elements[b].binds;
+                    prev = bi;
+                    if (prev > 0)
+                        prev--;
+                    next = bi + 1;
+                    if (next >= binds->size)
+                        next = binds->size - 1;
+                    for (bone_i = 0; bone_i < bones->size; bone_i++) {
+                        struct skf_Bone *b = &bones->elements[bone_i];
+                        if (b->id ==
+                            (uint32_t) binds->elements[prev].bone_id) {
+                            prev_bone = b;
+                        } else if (b->id ==
+                            (uint32_t) binds->elements[next].bone_id) {
+                            next_bone = b;
+                        }
+                        if (prev_bone != NULL && next_bone != NULL)
+                            break;
+                    }
+
+                    {
+                        /* get the average of normals between previous
+                        bone, this bone, and next bone */
+                        struct skf_Vertex *vert;
+                        const struct skf_Vec2 prev_dir = skf_vec2_sub(
+                            bind_bone->pos, prev_bone->pos);
+                        const struct skf_Vec2 next_dir = skf_vec2_sub(
+                            next_bone->pos, bind_bone->pos);
+                        struct skf_Vec2 prev_normal, next_normal, average,
+                            rotated, weight_vec;
+                        float normal_angle, weight;
+                        prev_normal.x = -prev_dir.y;
+                        prev_normal.y = prev_dir.x;
+                        prev_normal = skf_vec2_normalize(prev_normal);
+                        next_normal.x = -next_dir.y;
+                        next_normal.y = next_dir.x;
+                        next_normal = skf_vec2_normalize(next_normal);
+                        average = skf_vec2_add(prev_normal, next_normal);
+                        normal_angle = atan2(average.y, average.x);
+
+                        /* move vertex to bind bone, then just adjust it to
+                        'bounce' off the line's surface */
+                        vert = &bones->elements[b].vertices.elements[vert_id];
+                        vert->pos = skf_vec2_add(vert->init_pos, bind_bone->pos);
+                        rotated = skf_vec2_rotate(
+                            skf_vec2_sub(vert->pos, bind_bone->pos),
+                            normal_angle
+                        );
+                        weight = bind->verts.elements[v].weight;
+                        weight_vec.x = weight;
+                        weight_vec.y = weight;
+                        vert->pos = skf_vec2_add(
+                            bind_bone->pos, skf_vec2_mul(rotated, weight_vec)
+                        );
+                    }
+                }
             }
         }
     }
@@ -940,10 +974,10 @@ struct skf_Vec_Bone skf_construct(struct skf_Armature *armature)
 {
     size_t i;
     struct skf_Vec_Bone bones = {0};
+    struct skf_Vec_inverse_kinematics_rotation ik_rots = {0};
     for (i = 0; i < armature->bones.size; i++)
         skf_Vec_append(bones, skf_bone_shallow_copy(&armature->bones.elements[i]));
 
-    struct skf_Vec_inverse_kinematics_rotation ik_rots = {0};
     if (!armature->baked_ik) {
         struct skf_Vec_Bone inheritance_bones = {0};
         for (i = 0; i < armature->bones.size; i++)
