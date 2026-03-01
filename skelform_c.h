@@ -1016,7 +1016,7 @@ uint32_t skf_format_frame(
     const skf_bool is_loop
 )
 {
-    uint32_t last_frame = (animation->keyframes.size == 0) ?
+    uint32_t last_frame = (animation->keyframes.size > 0) ?
         (animation->keyframes.elements[animation->keyframes.size - 1].frame) :
         0;
     if (is_loop)
