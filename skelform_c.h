@@ -21,6 +21,17 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+/**
+ * @brief A one-header ANSI C no-external-dependency generic SkelForm runtime,
+ *  that can be extended for other engines.
+ * 
+ * \file
+ */
+/**
+ * @defgroup skf_functions Runtime Functions
+ * @brief All public skelform_c functions.
+ * @{
+ */
 
 
 #ifndef SKELFORM_C_H
@@ -48,28 +59,46 @@ typedef char skf_bool;
 #endif
 
 #define skf_Vec_BASE_CAPACITY 8
-/**
- * @brief Creates a vector (dynamic array) type.
- * 
- * @attention Don't forget to free an instance with `free(vector.elements)`!
- * \def
- */
-#define skf_Vec(T) struct skf_Vec_##T { \
-    T *elements;                        \
-    size_t capacity;                    \
-    size_t size;                        \
+/* TODO: fix documentations for vectors */
+#define skf_Vec(T) /**                                                     \
+ * @brief A vector (dynamic array) type. Append with `skf_Vec_append`,     \
+    and check if an element is contained using `skf_Vec_contains`.         \
+ * @attention Don't forget to free instances with `free(vector.elements)`! \
+ */                                                                        \
+struct skf_Vec_##T {                                                       \
+    /**                                                                    \
+     * @brief Pointer to the actual elements.                              \
+     */                                                                    \
+    T *elements;                                                           \
+    /**                                                                    \
+     * @brief How much elements the vector can hold without re-allocating. \
+     */                                                                    \
+    size_t capacity;                                                       \
+    /**                                                                    \
+     * @brief How much elements the vector currently holds.                \
+     */                                                                    \
+    size_t size;                                                           \
 }
-/**
- * @brief Creates a vector (dynamic array) type for an skf_ namespace struct.
- * 
- * @attention Don't forget to free an instance with `free(vector.elements)`!
- * \def
- */
-#define skf_Vec_struct(T) struct skf_Vec_##T { \
-    struct skf_##T *elements;                  \
-    size_t capacity;                           \
-    size_t size;                               \
+#define skf_Vec_struct(T) /**                                              \
+ * @brief A vector (dynamic array) type. Append with `skf_Vec_append`,     \
+    and check if an element is contained using `skf_Vec_contains`.         \
+ * @attention Don't forget to free instances with `free(vector.elements)`! \
+ */                                                                        \
+struct skf_Vec_##T {                                                       \
+    /**                                                                    \
+     * @brief Pointer to the actual elements.                              \
+     */                                                                    \
+    struct skf_##T *elements;                                              \
+    /**                                                                    \
+     * @brief How much elements the vector can hold without re-allocating. \
+     */                                                                    \
+    size_t capacity;                                                       \
+    /**                                                                    \
+     * @brief How much elements the vector currently holds.                \
+     */                                                                    \
+    size_t size;                                                           \
 }
+
 /**
  * @brief Appends a value to a vector (dynamic array).
  * 
@@ -256,10 +285,16 @@ skf_Vec_struct(BoneBindVert);
  * @brief A bone bind, containing many vertices.
  */
 struct skf_BoneBind {
+    /**
+     * @brief Vector of the vertices associated with the bind.
+     */
     struct skf_Vec_BoneBindVert verts;
+    /**
+     * @brief Unique ID of bone bind.
+     */
     int32_t bone_id;
     /**
-     * @brief skf_true i.
+     * @brief skf_true if it behaves like a path, else skf_false.
      */
     skf_bool is_path;
 };
@@ -494,11 +529,21 @@ struct skf_Armature {
     skf_bool baked_ik;
 };
 
+/**
+ * \internal
+ */
 struct skf_inverse_kinematics_rotation {
     uint32_t ik_bone_id;
     float rotation;
 };
-skf_Vec_struct(inverse_kinematics_rotation);
+/**
+ * \internal
+ */
+struct skf_Vec_inverse_kinematics_rotation {
+    struct skf_inverse_kinematics_rotation *elements;
+    size_t capacity;
+    size_t size;
+};
 
 
 size_t skf_get_prev_frame(
@@ -782,6 +827,7 @@ void skf_reset_bone(
 }
 
 /**
+ * @defgroup skf_functions
  * @brief Interpolates bone fields based on provided animation data, as well as initial states
  *  non-animated fields.
  * 
@@ -1261,6 +1307,7 @@ void skf_construct_verts(struct skf_Vec_Bone *bones)
 }
 
 /**
+ * @defgroup skf_functions
  * @brief Constructs the bones and vertices with inverse kinematics.
  * 
  * @param armature Pointer to the armature.
@@ -1289,6 +1336,7 @@ struct skf_Vec_Bone skf_construct(struct skf_Armature *armature)
 }
 
 /**
+ * @defgroup skf_functions
  * @brief Searches a texture based off its name.
  * 
  * @param bone_texture Name of the texture to search for.
@@ -1314,6 +1362,7 @@ struct skf_Texture *skf_get_bone_texture(
 }
 
 /**
+ * @defgroup skf_functions
  * @brief Helper function to allow reversing or looping.
  * 
  * @param frame Frame number of the animation.
@@ -1340,6 +1389,7 @@ uint32_t skf_format_frame(
 }
 
 /**
+ * @defgroup skf_functions
  * @brief Helper function to allow reversing or looping, using time instead of frames
  *  (and thus, framerate independent).
  * 
@@ -1363,6 +1413,7 @@ uint32_t skf_time_frame(
 }
 
 /**
+ * @defgroup skf_functions
  * @brief Corrects bone flipping, since one of the scale X/Y being negative
  *  mean that the rotation should be flipped.
  * 
@@ -1377,5 +1428,7 @@ void skf_check_bone_flip(
     if ((scale.x < 0.0f) ^ (scale.y < 0.0f))
         bone->rot = -bone->rot;
 }
+
+/** @} */
 
 #endif
