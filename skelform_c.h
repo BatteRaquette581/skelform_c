@@ -32,23 +32,49 @@ SOFTWARE.
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * @brief skelform_c's own boolean type, use the skf_true and skf_false constants.
+ * 
+ * \typedef
+ */
 typedef char skf_bool;
 #define skf_true 1
 #define skf_false 0
 
+#ifdef _MSC_VER
+#define skf_NAN (-(float)(((float)(1e+300 * 1e+300)) * 0.0F))
+#else
 #define skf_NAN (0.0f / 0.0f)
+#endif
 
 #define skf_Vec_BASE_CAPACITY 8
+/**
+ * @brief Creates a vector (dynamic array) type.
+ * 
+ * @attention Don't forget to free an instance with `free(vector.elements)`!
+ * \def
+ */
 #define skf_Vec(T) struct skf_Vec_##T { \
     T *elements;                        \
     size_t capacity;                    \
     size_t size;                        \
 }
+/**
+ * @brief Creates a vector (dynamic array) type for an skf_ namespace struct.
+ * 
+ * @attention Don't forget to free an instance with `free(vector.elements)`!
+ * \def
+ */
 #define skf_Vec_struct(T) struct skf_Vec_##T { \
     struct skf_##T *elements;                  \
     size_t capacity;                           \
     size_t size;                               \
 }
+/**
+ * @brief Appends a value to a vector (dynamic array).
+ * 
+ * \def
+ */
 #define skf_Vec_append(vec, element) {                                                  \
     if (vec.capacity <= vec.size) {                                                     \
         if (vec.capacity == 0)                                                          \
@@ -59,6 +85,12 @@ typedef char skf_bool;
     }                                                                                   \
     vec.elements[vec.size++] = element;                                                 \
 }
+/**
+ * @brief Sets the destination value to skf_true if the value is present in the vector,
+ *  else skf_false.
+ * 
+ * \def
+ */
 #define skf_Vec_contains(vec, element, destination) {           \
     size_t _skf_vec_i;                                          \
     destination = skf_false;                                    \
@@ -72,25 +104,72 @@ typedef char skf_bool;
 skf_Vec(uint32_t);
 skf_Vec(float);
 
+/**
+ * @brief Represents the color multiplier applied to the texture.
+ * @attention For now, unused.
+ * 
+ * \struct
+ */
 struct skf_Tint {
+    /**
+     * @brief Red component (0-1).
+     */
     float r;
+    /**
+     * @brief Green component (0-1).
+     */
     float g;
+    /**
+     * @brief Blue component (0-1).
+     */
     float b;
+    /**
+     * @brief Alpha (opacity) component (0-1).
+     */
     float a;
 };
 
+/**
+ * @brief Represents a 2 dimensional position or spatial vector.
+ * 
+ * \struct
+ */
 struct skf_Vec2 {
+    /**
+     * @brief X component.
+     */
     float x;
+    /**
+     * @brief Y component.
+     */
     float y;
 };
 
+/**
+ * @brief Represents a vertex in a bone non-quad mesh.
+ * 
+ * \struct
+ */
 struct skf_Vertex {
+    /**
+     * @brief Vertex position.
+     */
     struct skf_Vec2 pos;
+    /**
+     * @brief Vertex texture UV coordinate (0-1 for both X and Y).
+     */
     struct skf_Vec2 uv;
+    /**
+     * @brief Initial vertex position (left untouched by functions).
+     */
     struct skf_Vec2 init_pos;
 };
 skf_Vec_struct(Vertex);
 
+/*!
+ * @brief Represents a vertex in a bone non-quad mesh.
+ * @attention For now, unused.
+ */
 enum skf_HandlePreset {
     skf_HandlePreset_Linear,
     skf_HandlePreset_SineIn,
@@ -100,99 +179,341 @@ enum skf_HandlePreset {
     skf_HandlePreset_Custom
 };
 
+/**
+ * @brief Represents an animation keyframe, depicting which value to modify, when and how.
+ * 
+ * \struct
+ */
 struct skf_Keyframe {
+    /**
+     * @brief Handle to use for start of interpolation.
+     */
     struct skf_Vec2 start_handle;
+    /**
+     * @brief Handle to use for end of interpolation.
+     */
     struct skf_Vec2 end_handle;
+    /**
+     * @brief Element to be animated by the keyframe.
+     */
     const char *element;
+    /**
+     * @brief Value to be modified by the keyframe.
+     */
     const char *value_str;
+    /**
+     * @brief Frame when the keyframe starts.
+     */
     uint32_t frame;
+    /**
+     * @brief ID of bone that keyframe refers to.
+     */
     uint32_t bone_id;
+    /**
+     * @brief Value to set to.
+     */
     float value;
+    /**
+     * @brief Legacy member, left in for compatibility (to be removed).
+     * @deprecated
+     */
     float label_top;
+    /**
+     * @brief Handle preset to be used.
+     * @attention For now, unused.
+     */
     enum skf_HandlePreset handle_preset;
 };
 skf_Vec_struct(Keyframe);
 
+/**
+ * @brief Represents an animation, containing many keyframes, a name, and a framerate.
+ * 
+ * \struct
+ */
 struct skf_Animation {
+    /**
+     * @brief Vector of animation keyframes.
+     */
     struct skf_Vec_Keyframe keyframes;
+    /**
+     * @brief Animation name.
+     */
     const char *name;
+    /**
+     * @brief Animation framerate.
+     */
     uint32_t fps;
 };
 skf_Vec_struct(Animation);
 
+/**
+ * @brief A bone bind vertex, only containing a weight.
+ * 
+ * \struct
+ */
 struct skf_BoneBindVert {
+    /**
+     * @brief Vertex ID.
+     */
     uint32_t id;
+    /**
+     * @brief Vertex weight.
+     */
     float weight;
 };
 skf_Vec_struct(BoneBindVert);
 
+/**
+ * @brief A bone bind, containing many vertices.
+ * 
+ * \struct
+ */
 struct skf_BoneBind {
     struct skf_Vec_BoneBindVert verts;
     int32_t bone_id;
+    /**
+     * @brief skf_true i.
+     */
     skf_bool is_path;
 };
 skf_Vec_struct(BoneBind);
 
+/**
+ * @brief Represents a bone, capable of inverse kinematics, binds,
+ *  and possibly a mesh (as well as other information).
+ * 
+ * \struct
+ */
 struct skf_Bone {
+    /**
+     * @brief Vector of IDs of bones for inverse kinematics.
+     */
     struct skf_Vec_uint32_t ik_bone_ids;
+    /**
+     * @brief Vector of vertices, if the bone is a custom mesh.
+     *  If its size is 0, it is a quad mesh, with the scale
+     *  and texture size used for the vertices' positions.
+     */
     struct skf_Vec_Vertex vertices;
+    /**
+     * @brief If the bone is a custom mesh, this represents the
+     *  indices of the mesh triangles using vertices' IDs.
+     */
     struct skf_Vec_uint32_t indices;
+    /**
+     * @brief Vector of bone binds.
+     */
     struct skf_Vec_BoneBind binds;
+    /**
+     * @brief Tint to multiply the color's texture to.
+     * @attention For now, unused.
+     */
     struct skf_Tint tint;
+    /**
+     * @brief Initial tint to multiply the color's texture to
+     *  (left untouched by runtimes).
+     * @attention For now, unused.
+     */
     struct skf_Tint init_tint;
+    /**
+     * @brief Scale to multiply the bone-space vertex positions to.
+     */
     struct skf_Vec2 scale;
+    /**
+     * @brief Vertex position, can be modified by a runtime to fit scale.
+     */
     struct skf_Vec2 pos;
+    /**
+     * @brief Initial scale to multiply the bone-space vertex positions
+     *  to (left untouched by runtimes).
+     */
     struct skf_Vec2 init_scale;
+    /**
+     * @brief Initial vertex position (left untouched by runtimes).
+     */
     struct skf_Vec2 init_pos;
+    /**
+     * @brief Name of the bone in the editor.
+     */
     const char *name;
+    /**
+     * @brief Name of the texture.
+     */
     const char *tex;
+    /**
+     * @brief Initial name of the texture (left untouched by runtimes).
+     */
     const char *init_tex;
+    /**
+     * @brief The family's constraint.
+     */
     const char *ik_constraint;
+    /**
+     * @brief The family's initial constraint (left untouched by runtimes).
+     */
     const char *init_ik_constraint;
+    /**
+     * @brief The inverse kinematics mode, how inverse kinematics should be
+     *  performed, can be "FABRIK", or "ARC".
+     */
     const char *ik_mode;
+    /**
+     * @brief The initial inverse kinematics mode (left untouched by runtimes),
+     *  how inverse kinematics should be performed, can be "FABRIK", or "ARC".
+     */
     const char *init_ik_mode;
+    /**
+     * @brief Unique bone ID.
+     */
     uint32_t id;
+    /**
+     * @brief Bone ID of the parent of this bone (-1 if no parent).
+     */
     int32_t parent_id;
+    /**
+     * @brief Family ID of this bone (-1 if no family).
+     */
     int32_t ik_family_id;
+    /**
+     * @brief Target ID of this bone (-1 if no target).
+     */
     int32_t ik_target_id;
+    /**
+     * @brief Z index, higher means higher priority and rendered later.
+     */
     int32_t zindex;
+    /**
+     * @brief Initial Z index (left untouched by runtimes), higher means
+     *  higher priority and rendered later.
+     */
     int32_t init_zindex;
+    /**
+     * @brief Rotation in radians.
+     */
     float rot;
+    /**
+     * @brief Initial rotation in radians (left untouched by runtimes).
+     */
     float init_rot;
+    /**
+     * @brief skf_true if hidden, else skf_false.
+     */
     skf_bool hidden;
+    /**
+     * @brief skf_true if hidden, else skf_false, initial state left
+     *  untouched by runtimes.
+     */
     skf_bool init_hidden;
 };
 skf_Vec_struct(Bone);
 
+/**
+ * @brief Represents a rectangle for a texture in an atlas, and its
+ *  name.
+ * 
+ * \struct
+ */
 struct skf_Texture {
+    /**
+     * @brief Top left corner of the texture rectangle.
+     */
     struct skf_Vec2 offset;
+    /**
+     * @brief Size the texture rectangle.
+     */
     struct skf_Vec2 size;
+    /**
+     * @brief Texture name.
+     */
     const char *name;
+    /**
+     * @brief Index of the atlas it corresponds to.
+     */
     uint32_t atlas_idx;
 };
 skf_Vec_struct(Texture);
 
+/**
+ * @brief A style can swap an armature's textures.
+ * 
+ */
 struct skf_Style {
+    /**
+     * @brief Vector containing the textures.
+     */
     struct skf_Vec_Texture textures;
+    /**
+     * @brief Style name.
+     */
     const char *name;
+    /**
+     * @brief Style unique ID.
+     */
     uint32_t id;
+    /**
+     * @brief skf_true if active, else skf_false.
+     */
     skf_bool active;
 };
 skf_Vec_struct(Style);
 
+/**
+ * @brief Represents a texture atlas, with a size and file name
+ *  in the archive.
+ * 
+ * \struct
+ */
 struct skf_TexAtlas {
+    /**
+     * @brief Size in pixels of the atlas.
+     */
     struct skf_Vec2 size;
+    /**
+     * @brief File name of the atlas in the archive.
+     */
     const char *filename;
 };
 skf_Vec_struct(TexAtlas);
 
+/**
+ * @brief Represents an armature (an .skf file), with bones,
+ *  animations, textures, style, and texture atlases.
+ * @attention All vectors must be freed here with
+ *  `free(vector.elements)`.
+ * 
+ * \struct
+ */
 struct skf_Armature {
+    /**
+     * @brief Vector of bone IDs that contain inverse kinematics
+     *  data.
+     */
     struct skf_Vec_uint32_t ik_root_ids;
+    /**
+     * @brief Vector of bones present in the armature.
+     */
     struct skf_Vec_Bone bones;
+    /**
+     * @brief Vector of animations present in the armature.
+     */
     struct skf_Vec_Animation animations;
+    /**
+     * @brief Vector of textures present in the armature.
+     */
     struct skf_Vec_Texture textures;
+    /**
+     * @brief Vector of textures present in the armature.
+     */
     struct skf_Vec_Style styles;
+    /**
+     * @brief Vector of textures atlases present in the armature.
+     */
     struct skf_Vec_TexAtlas atlases;
+    /**
+     * @brief skf_true if the inverse kinematics are baked, else
+     *  skf_false.
+     */
     skf_bool baked_ik;
 };
 
@@ -483,6 +804,17 @@ void skf_reset_bone(
     skf_reset_bone_hard_interpolate_string("IkConstraint", bone->ik_constraint, bone->init_ik_constraint);
 }
 
+/**
+ * @brief Interpolates bone fields based on provided animation data, as well as initial states
+ *  non-animated fields.
+ * 
+ * @param bones Pointer to the vector containing the bones of the armature.
+ * @param anims Pointer to the vector containing the animations in use.
+ * @param frames Pointer to the vector containing the respective animation frames.
+ * @param blend_frames Pointer to the vector containing the respective animation "blend"
+ *  cross-fade frames.
+ * @return This function is an in-place function and will directly modify the bones vector.
+ */
 void skf_animate(
     struct skf_Vec_Bone *bones,
     const struct skf_Vec_Animation *anims,
@@ -516,39 +848,8 @@ void skf_animate(
 struct skf_Bone skf_bone_shallow_copy(const struct skf_Bone *bone)
 {
     struct skf_Bone new_bone;
-    new_bone.binds = bone->binds;
-    new_bone.hidden = bone->hidden;
-    new_bone.id = bone->id;
-    new_bone.ik_bone_ids = bone->ik_bone_ids;
-    new_bone.ik_constraint = bone->ik_constraint;
-    new_bone.ik_family_id = bone->ik_family_id;
-    new_bone.ik_mode = bone->ik_mode;
-    new_bone.ik_target_id = bone->ik_target_id;
-    new_bone.indices = bone->indices;
-    new_bone.init_hidden = bone->init_hidden;
-    new_bone.init_ik_constraint = bone->init_ik_constraint;
-    new_bone.init_ik_mode = bone->init_ik_mode;
-    new_bone.init_pos = bone->init_pos;
-    new_bone.init_rot = bone->init_rot;
-    new_bone.init_scale = bone->init_scale;
-    new_bone.init_tex = bone->init_tex;
-    new_bone.init_tint = bone->init_tint;
-    new_bone.init_zindex = bone->init_zindex;
-    new_bone.name = bone->name;
-    new_bone.parent_id = bone->parent_id;
-    new_bone.pos = bone->pos;
-    new_bone.rot = bone->rot;
-    new_bone.scale = bone->scale;
-    new_bone.tex = bone->tex;
-    new_bone.tint = bone->tint;
-    new_bone.vertices = bone->vertices;
-    new_bone.zindex = bone->zindex;
+    memcpy(&new_bone, bone, sizeof(struct skf_Bone));
     return new_bone;
-}
-
-float skf_vec2_magnitude(const struct skf_Vec2 vec)
-{
-    return sqrt(vec.x * vec.x + vec.y * vec.y);
 }
 
 struct skf_Vec2 skf_vec2_add(const struct skf_Vec2 v1, const struct skf_Vec2 v2)
@@ -573,6 +874,18 @@ struct skf_Vec2 skf_vec2_mul(const struct skf_Vec2 v1, const struct skf_Vec2 v2)
     new_vec.x = v1.x * v2.x;
     new_vec.y = v1.y * v2.y;
     return new_vec;
+}
+
+struct skf_Vec2 skf_vec2_div(const struct skf_Vec2 v1, const struct skf_Vec2 v2)
+{
+    struct skf_Vec2 new_vec;
+    new_vec.x = v1.x / v2.x;
+    new_vec.y = v1.y / v2.y;
+    return new_vec;
+}
+
+float skf_vec2_magnitude(const struct skf_Vec2 vec) {
+    return sqrt(vec.x * vec.x + vec.y * vec.y);
 }
 
 struct skf_Vec2 skf_vec2_normalize(const struct skf_Vec2 vec)
@@ -970,6 +1283,12 @@ void skf_construct_verts(struct skf_Vec_Bone *bones)
     }
 }
 
+/**
+ * @brief Constructs the bones and vertices with inverse kinematics.
+ * 
+ * @param armature Pointer to the armature.
+ * @return New modified bones.
+ */
 struct skf_Vec_Bone skf_construct(struct skf_Armature *armature)
 {
     size_t i;
@@ -992,6 +1311,14 @@ struct skf_Vec_Bone skf_construct(struct skf_Armature *armature)
     return bones;
 }
 
+/**
+ * @brief Searches a texture based off its name.
+ * 
+ * @param bone_texture Name of the texture to search for.
+ * @param styles Pointer to the vector of the styles of the armature.
+ * @return NULL if the texture is not found, else pointer to
+ *  the texture.
+ */
 struct skf_Texture *skf_get_bone_texture(
     const char *bone_texture,
     const struct skf_Vec_Style *styles
@@ -1009,6 +1336,15 @@ struct skf_Texture *skf_get_bone_texture(
     return NULL;
 }
 
+/**
+ * @brief Helper function to allow reversing or looping.
+ * 
+ * @param frame Frame number of the animation.
+ * @param animation Pointer to the animation.
+ * @param reverse skf_true if the returned frame should play the frames in reverse.
+ * @param is_loop skf_true if the animation should loop back to the start when ended.
+ * @return The new frame number to animate with.
+ */
 uint32_t skf_format_frame(
     uint32_t *frame,
     const struct skf_Animation *animation,
@@ -1026,6 +1362,16 @@ uint32_t skf_format_frame(
     return *frame;
 }
 
+/**
+ * @brief Helper function to allow reversing or looping, using time instead of frames
+ *  (and thus, framerate independent).
+ * 
+ * @param elapsed_time_seconds Elapsed time in seconds since start of the animation.
+ * @param animation Pointer to the animation.
+ * @param reverse skf_true if the returned frame should play the frames in reverse.
+ * @param is_loop skf_true if the animation should loop back to the start when ended.
+ * @return The new frame number to animate with.
+ */
 uint32_t skf_time_frame(
     const float elapsed_time_seconds,
     const struct skf_Animation *animation,
@@ -1039,6 +1385,13 @@ uint32_t skf_time_frame(
     return frame;
 }
 
+/**
+ * @brief Corrects bone flipping, since one of the scale X/Y being negative
+ *  mean that the rotation should be flipped.
+ * 
+ * @param bone Bone to have its rotation modified in-place.
+ * @param scale The scale applied.
+ */
 void skf_check_bone_flip(
     struct skf_Bone *bone,
     const struct skf_Vec2 scale
