@@ -107,8 +107,6 @@ skf_Vec(float);
 /**
  * @brief Represents the color multiplier applied to the texture.
  * @attention For now, unused.
- * 
- * \struct
  */
 struct skf_Tint {
     /**
@@ -131,8 +129,6 @@ struct skf_Tint {
 
 /**
  * @brief Represents a 2 dimensional position or spatial vector.
- * 
- * \struct
  */
 struct skf_Vec2 {
     /**
@@ -147,8 +143,6 @@ struct skf_Vec2 {
 
 /**
  * @brief Represents a vertex in a bone non-quad mesh.
- * 
- * \struct
  */
 struct skf_Vertex {
     /**
@@ -181,8 +175,6 @@ enum skf_HandlePreset {
 
 /**
  * @brief Represents an animation keyframe, depicting which value to modify, when and how.
- * 
- * \struct
  */
 struct skf_Keyframe {
     /**
@@ -228,8 +220,6 @@ skf_Vec_struct(Keyframe);
 
 /**
  * @brief Represents an animation, containing many keyframes, a name, and a framerate.
- * 
- * \struct
  */
 struct skf_Animation {
     /**
@@ -249,8 +239,6 @@ skf_Vec_struct(Animation);
 
 /**
  * @brief A bone bind vertex, only containing a weight.
- * 
- * \struct
  */
 struct skf_BoneBindVert {
     /**
@@ -266,8 +254,6 @@ skf_Vec_struct(BoneBindVert);
 
 /**
  * @brief A bone bind, containing many vertices.
- * 
- * \struct
  */
 struct skf_BoneBind {
     struct skf_Vec_BoneBindVert verts;
@@ -282,8 +268,6 @@ skf_Vec_struct(BoneBind);
 /**
  * @brief Represents a bone, capable of inverse kinematics, binds,
  *  and possibly a mesh (as well as other information).
- * 
- * \struct
  */
 struct skf_Bone {
     /**
@@ -411,8 +395,6 @@ skf_Vec_struct(Bone);
 /**
  * @brief Represents a rectangle for a texture in an atlas, and its
  *  name.
- * 
- * \struct
  */
 struct skf_Texture {
     /**
@@ -436,7 +418,6 @@ skf_Vec_struct(Texture);
 
 /**
  * @brief A style can swap an armature's textures.
- * 
  */
 struct skf_Style {
     /**
@@ -461,8 +442,6 @@ skf_Vec_struct(Style);
 /**
  * @brief Represents a texture atlas, with a size and file name
  *  in the archive.
- * 
- * \struct
  */
 struct skf_TexAtlas {
     /**
@@ -481,8 +460,6 @@ skf_Vec_struct(TexAtlas);
  *  animations, textures, style, and texture atlases.
  * @attention All vectors must be freed here with
  *  `free(vector.elements)`.
- * 
- * \struct
  */
 struct skf_Armature {
     /**
