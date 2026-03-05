@@ -678,16 +678,16 @@ void skf_interpolate_keyframes(
     }
 }
 
-#define skf_interpolate_bone_next_frame(element, field, kf_value) {       \
+#define skf_interpolate_bone_next_frame(element, field, kf_value, T) {    \
     prev_frame = skf_get_prev_frame(keyframes, frame, element, bone->id); \
     if (prev_frame != SIZE_MAX) {                                         \
-        field = keyframes->elements[prev_frame].kf_value;                 \
+        field = (T) keyframes->elements[prev_frame].kf_value;             \
     }                                                                     \
 }
 #define skf_interpolate_bone_next_frame_string(element, field) {          \
     prev_frame = skf_get_prev_frame(keyframes, frame, element, bone->id); \
     if (prev_frame != SIZE_MAX) {                                         \
-        field = _strdup(keyframes->elements[prev_frame].value_str);        \
+        field = _strdup(keyframes->elements[prev_frame].value_str);       \
     }                                                                     \
 }
 void skf_interpolate_bone(
@@ -772,7 +772,7 @@ void skf_interpolate_bone(
         blend_frame
     );
     skf_interpolate_bone_next_frame_string("Texture", bone->tex);
-    skf_interpolate_bone_next_frame       ("Zindex", bone->zindex, value);
+    skf_interpolate_bone_next_frame       ("Zindex", bone->zindex, value, int32_t);
     skf_interpolate_bone_next_frame_string("IkMode", bone->ik_mode);
     skf_interpolate_bone_next_frame_string("IkConstraint", bone->ik_constraint);
 }
@@ -953,7 +953,7 @@ struct skf_Vec2 skf_vec2_div(const struct skf_Vec2 v1, const struct skf_Vec2 v2)
  * @return `vec`'s magnitude (or length).
  */
 float skf_vec2_magnitude(const struct skf_Vec2 vec) {
-    return sqrt(vec.x * vec.x + vec.y * vec.y);
+    return (float) sqrt(vec.x * vec.x + vec.y * vec.y);
 }
 
 /**
@@ -990,8 +990,8 @@ struct skf_Vec2 skf_vec2_normalize(const struct skf_Vec2 vec)
 struct skf_Vec2 skf_vec2_rotate(const struct skf_Vec2 vec, const float radians)
 {
     struct skf_Vec2 new_vec;
-    new_vec.x = vec.x * cos(radians) - vec.y * sin(radians);
-    new_vec.y = vec.x * sin(radians) + vec.y * cos(radians);
+    new_vec.x = (float) (vec.x * cos(radians) - vec.y * sin(radians));
+    new_vec.y = (float) (vec.x * sin(radians) + vec.y * cos(radians));
     return new_vec;
 }
 
@@ -1102,7 +1102,7 @@ void skf_arc_ik(
 
     {
         const struct skf_Vec2 base = skf_vec2_sub(target, root);
-        const float base_angle = atan2(base.y, base.x);
+        const float base_angle = (float )atan2(base.y, base.x);
         float base_mag = skf_vec2_magnitude(base);
         if (base_mag > max_length)
             base_mag = max_length;
@@ -1114,7 +1114,7 @@ void skf_arc_ik(
             for (b = 1; b < bones->size; b++) {
                 bones->elements[b].pos.x *= valley;
                 bones->elements[b].pos.y = root.y + (1.0f - peak) 
-                    * sin(dist.elements[b] * 3.141592f) * base_mag;
+                    * ((float) sin(dist.elements[b] * 3.141592f)) * base_mag;
 
                 {
                     const struct skf_Vec2 rotated = skf_vec2_rotate(skf_vec2_sub(
@@ -1148,7 +1148,7 @@ void skf_point_bones(
                 family->ik_bone_ids.elements[i_reversed]];
 
             const struct skf_Vec2 dir = skf_vec2_sub(tip_pos, bone->pos);
-            bone->rot = atan2(dir.y, dir.x);
+            bone->rot = (float) atan2(dir.y, dir.x);
             tip_pos = bone->pos;
         }
     }
@@ -1165,7 +1165,7 @@ void skf_apply_constraints(
         bones->elements[family->ik_bone_ids.elements[1]].pos, root));
     const struct skf_Vec2 base_dir = skf_vec2_normalize(skf_vec2_sub(target, root));
     const float dir = joint_dir.x * base_dir.y - base_dir.x * joint_dir.y;
-    const float base_angle = atan2(base_dir.y, base_dir.x);
+    const float base_angle = (float) atan2(base_dir.y, base_dir.x);
 
     const skf_bool cw = strcmp(family->ik_constraint, "Clockwise") == 0 && dir > 0.0f;
     const skf_bool ccw = strcmp(family->ik_constraint, "CounterClockwise") == 0 && dir < 0.0f;
@@ -1345,7 +1345,7 @@ void skf_construct_verts(struct skf_Vec_Bone *bones)
                         next_normal.y = next_dir.x;
                         next_normal = skf_vec2_normalize(next_normal);
                         average = skf_vec2_add(prev_normal, next_normal);
-                        normal_angle = atan2(average.y, average.x);
+                        normal_angle = (float) atan2(average.y, average.x);
 
                         /* move vertex to bind bone, then just adjust it to
                         'bounce' off the line's surface */
@@ -1468,8 +1468,8 @@ uint32_t skf_time_frame(
     const skf_bool is_loop
 )
 {
-    const float frametime = 1.0f / animation->fps;
-    uint32_t frame = elapsed_time_seconds / frametime;
+    const float frametime = 1.0f / ((float) animation->fps);
+    uint32_t frame = (uint32_t) (elapsed_time_seconds / frametime);
     frame = skf_format_frame(&frame, animation, reverse, is_loop);
     return frame;
 }

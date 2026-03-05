@@ -6,5 +6,5 @@ A one-header ANSI C no-external-dependency generic SkelForm runtime, that can be
 
 The file can be compiled in any compiler (for contributing, it is better to have an ANSI standard compiler), but here is an example in gcc:
 ```shell
-gcc -ansi -Wall -Wextra -pedantic skelform_c.h
+gcc -ansi -Wall -Wextra -Wconversion -pedantic skelform_c.h
 ```
