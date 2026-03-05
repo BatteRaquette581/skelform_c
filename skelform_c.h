@@ -21,6 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+
 /**
  * @brief A one-header ANSI C no-external-dependency generic SkelForm runtime,
  *  that can be extended for other engines.
@@ -686,7 +687,7 @@ void skf_interpolate_keyframes(
 #define skf_interpolate_bone_next_frame_string(element, field) {          \
     prev_frame = skf_get_prev_frame(keyframes, frame, element, bone->id); \
     if (prev_frame != SIZE_MAX) {                                         \
-        field = strdup(keyframes->elements[prev_frame].value_str);        \
+        field = _strdup(keyframes->elements[prev_frame].value_str);        \
     }                                                                     \
 }
 void skf_interpolate_bone(
@@ -804,7 +805,7 @@ skf_bool skf_is_animated(
 }
 #define skf_reset_bone_hard_interpolate_string(element, field, init_field) { \
     if (!skf_is_animated(bone->id, element, anims))                          \
-        field = strdup(init_field);                                          \
+        field = _strdup(init_field);                                          \
 }
 void skf_reset_bone(
     struct skf_Bone *bone,
@@ -827,7 +828,7 @@ void skf_reset_bone(
 }
 
 /**
- * @defgroup skf_functions
+ * @ingroup skf_functions
  * @brief Interpolates bone fields based on provided animation data, as well as initial states
  *  non-animated fields.
  * 
@@ -875,6 +876,15 @@ struct skf_Bone skf_bone_shallow_copy(const struct skf_Bone *bone)
     return new_bone;
 }
 
+/**
+ * @ingroup skf_functions
+ * @brief Returns a vector whose X and Y components are respectively `v1.x + v2.x`,
+ *  and `v1.y + v2.y`.
+ * 
+ * @param v1 Left operand.
+ * @param v2 Right operand.
+ * @return `v1 + v2`
+ */
 struct skf_Vec2 skf_vec2_add(const struct skf_Vec2 v1, const struct skf_Vec2 v2)
 {
     struct skf_Vec2 new_vec;
@@ -883,6 +893,15 @@ struct skf_Vec2 skf_vec2_add(const struct skf_Vec2 v1, const struct skf_Vec2 v2)
     return new_vec;
 }
 
+/**
+ * @ingroup skf_functions
+ * @brief Returns a vector whose X and Y components are respectively `v1.x - v2.x`,
+ *  and `v1.y - v2.y`.
+ * 
+ * @param v1 Left operand.
+ * @param v2 Right operand.
+ * @return `v1 - v2`
+ */
 struct skf_Vec2 skf_vec2_sub(const struct skf_Vec2 v1, const struct skf_Vec2 v2)
 {
     struct skf_Vec2 new_vec;
@@ -891,6 +910,15 @@ struct skf_Vec2 skf_vec2_sub(const struct skf_Vec2 v1, const struct skf_Vec2 v2)
     return new_vec;
 }
 
+/**
+ * @ingroup skf_functions
+ * @brief Returns a vector whose X and Y components are respectively `v1.x * v2.x`,
+ *  and `v1.y * v2.y`. It is not a cross nor a dot product, but a Hadamard product.
+ * 
+ * @param v1 Left operand.
+ * @param v2 Right operand.
+ * @return The Hadamard product of `v1` and `v2`.
+ */
 struct skf_Vec2 skf_vec2_mul(const struct skf_Vec2 v1, const struct skf_Vec2 v2)
 {
     struct skf_Vec2 new_vec;
@@ -899,6 +927,16 @@ struct skf_Vec2 skf_vec2_mul(const struct skf_Vec2 v1, const struct skf_Vec2 v2)
     return new_vec;
 }
 
+/**
+ * @ingroup skf_functions
+ * @brief Returns a vector whose X and Y components are respectively `v1.x / v2.x`,
+ *  and `v1.y / v2.y`. It is a component wise division, a vector division doesn't
+ *  really actually mean anything.
+ * 
+ * @param v1 Left operand.
+ * @param v2 Right operand.
+ * @return The component-wise quotient of `v1` and `v2`.
+ */
 struct skf_Vec2 skf_vec2_div(const struct skf_Vec2 v1, const struct skf_Vec2 v2)
 {
     struct skf_Vec2 new_vec;
@@ -907,10 +945,26 @@ struct skf_Vec2 skf_vec2_div(const struct skf_Vec2 v1, const struct skf_Vec2 v2)
     return new_vec;
 }
 
+/**
+ * @ingroup skf_functions
+ * @brief Returns the magnitude (length) of the vector `vec`.
+ * 
+ * @param vec Input vector.
+ * @return `vec`'s magnitude (or length).
+ */
 float skf_vec2_magnitude(const struct skf_Vec2 vec) {
     return sqrt(vec.x * vec.x + vec.y * vec.y);
 }
 
+/**
+ * @ingroup skf_functions
+ * @brief Returns a copy of the vector `vec` pointing in the same direction,
+ *  but whose length is 1.
+ * 
+ * @param vec Input vector.
+ * @return `vec` but its length is 1, or a zero-vector if the input is also
+ *  a zero-vector.
+ */
 struct skf_Vec2 skf_vec2_normalize(const struct skf_Vec2 vec)
 {
     float magnitude = skf_vec2_magnitude(vec);
@@ -925,6 +979,14 @@ struct skf_Vec2 skf_vec2_normalize(const struct skf_Vec2 vec)
     return new_vec;
 }
 
+/**
+ * @ingroup skf_functions
+ * @brief Returns the vector `vec` rotated by the indicated angle in radians.
+ * 
+ * @param vec Input vector.
+ * @param radians Angle in radians (counter-clockwise).
+ * @return The rotated vector.
+ */
 struct skf_Vec2 skf_vec2_rotate(const struct skf_Vec2 vec, const float radians)
 {
     struct skf_Vec2 new_vec;
@@ -1307,7 +1369,7 @@ void skf_construct_verts(struct skf_Vec_Bone *bones)
 }
 
 /**
- * @defgroup skf_functions
+ * @ingroup skf_functions
  * @brief Constructs the bones and vertices with inverse kinematics.
  * 
  * @param armature Pointer to the armature.
@@ -1336,7 +1398,7 @@ struct skf_Vec_Bone skf_construct(struct skf_Armature *armature)
 }
 
 /**
- * @defgroup skf_functions
+ * @ingroup skf_functions
  * @brief Searches a texture based off its name.
  * 
  * @param bone_texture Name of the texture to search for.
@@ -1362,7 +1424,7 @@ struct skf_Texture *skf_get_bone_texture(
 }
 
 /**
- * @defgroup skf_functions
+ * @ingroup skf_functions
  * @brief Helper function to allow reversing or looping.
  * 
  * @param frame Frame number of the animation.
@@ -1389,7 +1451,7 @@ uint32_t skf_format_frame(
 }
 
 /**
- * @defgroup skf_functions
+ * @ingroup skf_functions
  * @brief Helper function to allow reversing or looping, using time instead of frames
  *  (and thus, framerate independent).
  * 
@@ -1413,7 +1475,7 @@ uint32_t skf_time_frame(
 }
 
 /**
- * @defgroup skf_functions
+ * @ingroup skf_functions
  * @brief Corrects bone flipping, since one of the scale X/Y being negative
  *  mean that the rotation should be flipped.
  * 
