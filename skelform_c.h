@@ -28,11 +28,6 @@ SOFTWARE.
  * 
  * \file
  */
-/**
- * @defgroup skf_functions Runtime Functions
- * @brief All public skelform_c functions.
- * @{
- */
 
 
 #ifndef SKELFORM_C_H
@@ -546,6 +541,12 @@ struct skf_Vec_inverse_kinematics_rotation {
     size_t size;
 };
 
+
+/**
+ * @defgroup skf_functions Runtime Functions
+ * @brief All public skelform_c functions.
+ * @{
+ */
 
 size_t skf_get_prev_frame(
     const struct skf_Vec_Keyframe *keyframes,
