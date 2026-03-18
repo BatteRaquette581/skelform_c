@@ -50,6 +50,7 @@ typedef char skf_bool;
 
 #ifdef _MSC_VER
 #define skf_NAN (-(float)(((float)(1e+300 * 1e+300)) * 0.0F))
+#define strdup _strdup
 #else
 #define skf_NAN (0.0f / 0.0f)
 #endif
@@ -685,11 +686,11 @@ void skf_interpolate_keyframes(
         field = (T) keyframes->elements[prev_frame].kf_value;             \
     }                                                                     \
 }
-#define skf_interpolate_bone_next_frame_string(element, field) {          \
-    prev_frame = skf_get_prev_frame(keyframes, frame, element, bone->id); \
-    if (prev_frame != SIZE_MAX) {                                         \
-        field = _strdup(keyframes->elements[prev_frame].value_str);       \
-    }                                                                     \
+#define skf_interpolate_bone_next_frame_string(element, field) {           \
+    prev_frame = skf_get_prev_frame(keyframes, frame, element, bone->id);  \
+    if (prev_frame != SIZE_MAX) {                                          \
+        field = (char*) strdup(keyframes->elements[prev_frame].value_str); \
+    }                                                                      \
 }
 void skf_interpolate_bone(
     struct skf_Bone *bone,
@@ -806,7 +807,7 @@ skf_bool skf_is_animated(
 }
 #define skf_reset_bone_hard_interpolate_string(element, field, init_field) { \
     if (!skf_is_animated(bone->id, element, anims))                          \
-        field = _strdup(init_field);                                          \
+        field = strdup(init_field);                                          \
 }
 void skf_reset_bone(
     struct skf_Bone *bone,
